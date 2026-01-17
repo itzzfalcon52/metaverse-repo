@@ -1,18 +1,14 @@
 // Importing WebSocket library for handling WebSocket connections
-const { WebSocket } = require("ws");
-
+import WebSocket from "ws";
 // Importing RoomManager to manage users and rooms
-const { RoomManager } = require("./RoomManager");
+import RoomManager from "./RoomManager.js";
 
-// Importing database client for interacting with the database
-const client = require("@repo/db");
-
+// Importing database db for interacting with the database
+import db from "@repo/db"
 // Importing JSON Web Token library for verifying and decoding tokens
-const jwt = require("jsonwebtoken");
-
+import jwt from "jsonwebtoken";
 // Importing the JWT password/secret from the configuration file
-const { JWT_PASSWORD } = require("./config");
-
+import {JWT_PASSWORD} from "./config.js"
 // Function to generate a random string of a given length
 // Used to create unique IDs for users
 function getRandomString(length) {
@@ -25,7 +21,7 @@ function getRandomString(length) {
 }
 
 // User class represents a connected user in the WebSocket server
-class User {
+ class User {
     constructor(ws) {
         // Assigning a unique ID to the user
         this.id = getRandomString(10);
@@ -73,7 +69,7 @@ class User {
                     this.userId = userId;
 
                     // Fetching the space from the database using the space ID
-                    const space = await client.space.findFirst({
+                    const space = await db.space.findFirst({
                         where: {
                             id: spaceId
                         }
@@ -177,7 +173,7 @@ class User {
 }
 
 // Exporting the User class for use in other modules
-module.exports = { User };
+export default User;
 
 // Generalized Steps for Future Reference:
 // 1. **User Initialization**:

@@ -1,1 +1,1 @@
-export const JWT_PASSWORD="supersecretjwtpassword_Hussain_5253";
+export const JWT_PASSWORD="MY_SUPER_SECRET_JWT_SECRET_KEY_HUSSAIN5253"
