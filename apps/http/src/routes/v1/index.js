@@ -7,7 +7,7 @@ import { SigninSchema } from '../../types/index.js';
 import db from '@repo/db';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
+import { userMiddleware } from '../../middlewares/user.js';
 const router=express.Router();
 
 const signToken = (id,role) => {
@@ -39,6 +39,8 @@ const signToken = (id,role) => {
           Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000
       ),
       httpOnly: true, //so that cookie cannot be modified by browser
+      sameSite: "Lax", //CSRF protection
+      secure: false  
     };
   
     // Secure cookie only in production (HTTPS only)
@@ -150,6 +152,51 @@ router.get("/avatars", async (req, res) => {
         name: x.name
     }))})
 })
+
+router.get("/me", userMiddleware, async (req, res) => {
+  try {
+    // Fetch the user from the database using the ID from the middleware
+    const user = await db.user.findUnique({
+      where: {
+        id: req.user.userId, // `req.user` is populated by `userMiddleware`
+      },
+      select: {
+        id: true,
+        username: true,
+        role: true, // Only return necessary fields
+      },
+    });
+
+    // If the user is not found, return a 404 error
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Send the user data as a response
+    res.status(200).json({
+      success:true,
+      user,
+    });
+  } catch (error) {
+    console.error("Error in /me endpoint:", error);
+    res.status(500).json({
+      message: "An error occurred while fetching user data",
+    });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/"
+  });
+
+  res.json({ success: true });
+});
 
 router.use("/user",userRouter);
 router.use("/space",spaceRouter);
