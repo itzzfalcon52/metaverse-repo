@@ -19,6 +19,8 @@ export const userMiddleware = (req, res, next) => {
     }
 
     req.user = decoded;     // ✅ attach full user object
+    req.userId = decoded.id ?? decoded.userId ?? decoded.sub;
+    
     next();
   } catch (err) {
     return res.status(401).json({

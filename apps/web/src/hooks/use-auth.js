@@ -22,6 +22,7 @@ export function useAuth() {
     queryFn: async () => {
       try {
         const response = await axiosInstance.get("/api/v1/me");
+        console.log(response.data);
         return response.data.user; // Assuming your `/me` endpoint returns `{ user: {...} }`
       } catch (error) {
         if (error.response?.status === 401 || error.response?.status === 403) {

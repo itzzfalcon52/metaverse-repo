@@ -1,94 +1,101 @@
-import { connectSocket } from "@/lib/sockets";
+import { connectSocket, sendJoinRequest } from "@/lib/sockets";
 import { useEffect } from "react";
-import { useWorldStore } from "@/stores/useWorldStore";
-import { toast } from "react-toastify";
+import { useCreateWorldStore } from "@/stores/useWorldStore";
+import { toast } from "sonner";
+
+function getJwtFromCookie() {
+  if (typeof document === "undefined") return "";
+  const m = document.cookie.match(/(?:^|;\s*)jwt=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
 
 export default function useWorldSocket(spaceID, token) {
-  // Zustand store actions
-  const addPlayer = useWorldStore((state) => state.addPlayer);
-  const removePlayer = useWorldStore((state) => state.removePlayer);
-  const movePlayer = useWorldStore((state) => state.movePlayer);
-  const setSelfId = useWorldStore((state) => state.setSelfId);
+  const addPlayer = useCreateWorldStore((s) => s.addPlayer);
+  const removePlayer = useCreateWorldStore((s) => s.removePlayer);
+  const movePlayer = useCreateWorldStore((s) => s.movePlayer);
+  const setSelfId = useCreateWorldStore((s) => s.setSelfId);
 
   useEffect(() => {
-    // Connect to the WebSocket server
-    const socket = connectSocket(token);
+    // Resolve JWT before connecting
+    const jwt = token || getJwtFromCookie();
+    if (!spaceID) return;
+    if (!jwt) {
+      toast.error("Missing auth token. Please log in.");
+      return;
+    }
 
-    // Send a "join" message when the connection is established
+    // Open a single socket and join
+    const socket = connectSocket(jwt);
+
     socket.onopen = () => {
-      console.log("WebSocket connected");
-      socket.send(
-        JSON.stringify({
-          type: "join",
-          payload: {
-            spaceId: spaceID,
-            token,
-          },
-        })
-      );
+      sendJoinRequest(spaceID, jwt);
     };
 
-    // Handle incoming messages
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+      let message;
+      try {
+        message = JSON.parse(event.data);
+      } catch {
+        console.warn("WS message parse error");
+        return;
+      }
 
       switch (message.type) {
         case "space-joined": {
-          // Set the current user's ID
-          setSelfId(message.payload.spawn);
+          window.__canMove = true;
 
-          // Add all existing users in the room
-          message.payload.users.forEach((user) => addPlayer(user));
+          const self = message.payload?.self?.id;
+          if (self) {
+            setSelfId(self);
+            addPlayer(self);
+          }
 
-          // Show a toast notification for joining the space
+          const users = Array.isArray(message.payload?.users) ? message.payload.users : [];
+          users.forEach((u) => addPlayer(u));
+          window.__canMove = true;
           toast.success("You have joined the space!");
           break;
         }
-
         case "user-joined": {
-          // Add the new player to the world
-          addPlayer(message.payload);
-
-          // Show a toast notification for the new user
-          toast.success(`${message.payload.userId} has joined the space!`);
+          const p = message.payload;
+          addPlayer(p);
           break;
         }
-
         case "movement": {
-          // Update the player's position
-          movePlayer(message.payload.userId, message.payload.x, message.payload.y);
+          const p = message.payload;
+          if (p?.id != null) movePlayer(p.id, p.x, p.y);
+          else if (p?.userId != null) movePlayer(p.userId, p.x, p.y);
           break;
         }
-
         case "movement-rejected": {
-          // Show a toast notification for invalid movement
           toast.error("Invalid movement!");
           break;
         }
-
         case "user-left": {
-          // Remove the player from the world
-          removePlayer(message.payload.userId);
-
-          // Show a toast notification for the user leaving
-          toast.info(`${message.payload.userId} has left the space.`);
+          const id = message.payload?.id ?? message.payload?.userId;
+          if (id != null) removePlayer(id);
           break;
         }
-
+        case "chat": {
+          // handled in page
+          break;
+        }
         default:
           console.warn("Unknown message type:", message.type);
       }
     };
 
-    // Handle WebSocket errors
     socket.onerror = (error) => {
       console.error("WebSocket error:", error);
-      toast.error("WebSocket connection error. Please try again.");
+      toast.error("WebSocket connection error. Check token and WS URL.");
     };
 
-    // Cleanup on component unmount
     return () => {
-      socket.close();
+      try {
+        window.__canMove = false;
+
+        socket.close();
+      } catch {}
     };
   }, [spaceID, token, addPlayer, removePlayer, movePlayer, setSelfId]);
 }

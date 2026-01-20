@@ -33,6 +33,7 @@ model Space {
   height    Int
   thumbnail String?
   creatorId String
+  mapId String
   creator     User    @relation(fields: [creatorId], references: [id])
   elements  spaceElements[]
 }

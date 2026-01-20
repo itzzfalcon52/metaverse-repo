@@ -10,6 +10,37 @@ import db from "@repo/db"
 const router = express.Router();
 
 
+router.get("/maps", adminMiddleware, async (req, res) => {
+    try {
+      const maps = await db.map.findMany({
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          width: true,
+          height: true,
+          thumbnail: true,
+          // optional: show number of elements placed on the map
+          mapElements: { select: { id: true } },
+        },
+      });
+  
+      res.json({
+        maps: maps.map((m) => ({
+          id: m.id,
+          name: m.name,
+          width: m.width,
+          height: m.height,
+          thumbnail: m.thumbnail,
+          elementsCount: m.mapElements.length,
+        })),
+      });
+    } catch (e) {
+      console.error("GET /admin/maps failed:", e);
+      res.status(500).json({ message: "Failed to load maps" });
+    }
+  });
+
 
 
 router.post("/element",adminMiddleware, async (req, res) => {
@@ -78,7 +109,36 @@ router.post("/map",adminMiddleware, async (req, res) => {
     })
 })
 
-router.post("/admin/map/upload", async (req, res) => {
+router.post("/maps/:mapId/elements", adminMiddleware, async (req, res) => {
+    const { placements } = req.body;
+    const { mapId } = req.params;
+  
+    if (!Array.isArray(placements)) {
+      return res.status(400).json({ message: "Invalid placements data" });
+    }
+  
+    // Delete existing placements for the map
+    await db.mapElements.deleteMany({
+      where: { mapId },
+    });
+  
+    // Create new placements
+    const createData = placements.map((p) => ({
+      mapId,
+      elementId: p.elementId,
+      x: p.x,
+      y: p.y,
+    }));
+  
+    await db.mapElements.createMany({
+      data: createData,
+    });
+  
+    res.json({ message: "Placements updated successfully" });
+  }
+)
+
+router.post("/map/upload", async (req, res) => {
     const { name, width, height, tilemapJson, thumbnail } = req.body;
   
     const map = await db.map.create({
@@ -94,7 +154,7 @@ router.post("/admin/map/upload", async (req, res) => {
     res.json({ mapId: map.id });
   });
 
-  router.post("/elements/import", userMiddleware, async (req, res) => {
+  router.post("/elements/import", adminMiddleware, async (req, res) => {
     try {
       const { folder = "/elements", static: isStatic = true } = req.body ?? {};
   

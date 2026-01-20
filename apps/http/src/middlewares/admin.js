@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 export const adminMiddleware=(req,res,next)=>{
-    const header=req.headers.authorization;  //Bearer hihewccweew1cv3q
-    const token=header?.split(" ")[1];
+    const token = req.cookies?.jwt;
     if(!token){
         return res.status(403).json({
             message:"Unauthorized.No token provided"

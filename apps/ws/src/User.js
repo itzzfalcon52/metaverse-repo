@@ -33,6 +33,9 @@ function getRandomString(length) {
         // Storing the WebSocket connection for this user
         this.ws = ws;
 
+        // Clean up on socket close
+        this.ws.on("close", () => this.destroy());
+
         // Initializing WebSocket event handlers for this user
         this.initHandlers();
     }
@@ -56,8 +59,20 @@ function getRandomString(length) {
                     const spaceId = parsedData.payload.spaceId;
                     const token = parsedData.payload.token;
 
+                    // Guard: token must be present and valid
+                    if (!token || typeof token !== "string" || token.trim() === "") {
+                        try { this.ws.close(); } catch {}
+                        return;
+                    }
+
                     // Verifying the token and extracting the user ID
-                    const userId = jwt.verify(token, JWT_PASSWORD).userId;
+                    let userId;
+                    try {
+                        userId = jwt.verify(token, JWT_PASSWORD).userId;
+                    } catch (e) {
+                        try { this.ws.close(); } catch {}
+                        return;
+                    }
 
                     // If the token is invalid or user ID is missing, close the connection
                     if (!userId) {
@@ -95,11 +110,16 @@ function getRandomString(length) {
                     this.send({
                         type: "space-joined",
                         payload: {
+                            // include self identifiers so client can track me
+                            self: { id: this.id, userId: this.userId, x: this.x, y: this.y },
                             spawn: {
                                 x: this.x,
                                 y: this.y
                             },
-                            users: RoomManager.getInstance().rooms.get(spaceId)?.filter(x => x.id !== this.id)?.map((u) => ({ id: u.id })) ?? []
+                            // include others with ids and positions if available
+                            users: RoomManager.getInstance().rooms.get(spaceId)
+                                ?.filter(x => x.id !== this.id)
+                                ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y })) ?? []
                         }
                     });
 
@@ -107,6 +127,7 @@ function getRandomString(length) {
                     RoomManager.getInstance().broadcast({
                         type: "user-joined",
                         payload: {
+                            id: this.id,
                             userId: this.userId,
                             x: this.x,
                             y: this.y
@@ -114,25 +135,59 @@ function getRandomString(length) {
                     }, this, this.spaceId);
                     break;
 
+                // New case: handle chat messages sent by the user
+                case "chat":
+                    // Ensure the user has joined a space before chatting
+                    if (!this.spaceId) {
+                        // User hasn't joined any space; ignore the message
+                        return;
+                    }
+
+                    // Extract the message text from payload, ensure it's a string
+                    {
+                      const rawMessage = parsedData?.payload?.message;
+                      const text = typeof rawMessage === "string" ? rawMessage.trim() : "";
+
+                      // Ignore empty messages
+                      if (!text) {
+                          return;
+                      }
+
+                      // Optional: cap the message length to prevent flooding (e.g., 500 chars)
+                      const capped = text.slice(0, 500);
+
+                      // Broadcast the chat message to all other users in the same room (exclude sender)
+                      RoomManager.getInstance().broadcast({
+                          type: "chat",
+                          payload: {
+                              userId: this.userId, // sender's authenticated user id
+                              message: capped,     // sanitized chat message
+                              ts: Date.now()       // timestamp for client-side ordering
+                          }
+                      }, this, this.spaceId);
+                    }
+                    break;
+
                 case "move":
                     // Extracting the new position (x, y) from the message payload
                     const moveX = parsedData.payload.x;
                     const moveY = parsedData.payload.y;
 
-                    // Calculating the displacement in x and y directions
-                    const xDisplacement = Math.abs(this.x - moveX);
-                    const yDisplacement = Math.abs(this.y - moveY);
+                    const dx = moveX - this.x;
+                    const dy = moveY - this.y;
 
-                    // Allowing movement only if it's a single step in any direction
-                    if ((xDisplacement == 1 && yDisplacement == 0) || (xDisplacement == 0 && yDisplacement == 1)) {
-                        // Updating the user's position
+                    const MAX_STEP = 8; // pixels per tick
+
+                    if (Math.abs(dx) <= MAX_STEP && Math.abs(dy) <= MAX_STEP) {
                         this.x = moveX;
-                        this.y = moveY;
+                        this.y = moveY;  
 
                         // Broadcasting the movement to other users in the room
                         RoomManager.getInstance().broadcast({
                             type: "movement",
                             payload: {
+                                id: this.id,
+                                userId: this.userId,
                                 x: this.x,
                                 y: this.y
                             }
@@ -158,6 +213,7 @@ function getRandomString(length) {
         RoomManager.getInstance().broadcast({
             type: "user-left",
             payload: {
+                id: this.id,
                 userId: this.userId
             }
         }, this, this.spaceId);
@@ -174,6 +230,7 @@ function getRandomString(length) {
 
 // Exporting the User class for use in other modules
 export default User;
+// ...existing comments...
 
 // Generalized Steps for Future Reference:
 // 1. **User Initialization**:

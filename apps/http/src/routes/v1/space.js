@@ -12,6 +12,53 @@ import {
 const router = express.Router();
 
 /* =========================================================
+   GET SPACE WORLD (MAP + ELEMENTS)
+   ========================================================= */
+   router.get("/:spaceId/world",userMiddleware, async (req, res) => {
+    try {
+      const space = await db.space.findUnique({
+        where: { id: req.params.spaceId },
+        include: {
+          elements: {
+            include: { element: true },
+          },
+        },
+      });
+  
+      if (!space) {
+        return res.status(404).json({ message: "Space not found" });
+      }
+  
+      // IMPORTANT: space must know which map it came from
+      const map = await db.map.findUnique({
+        where: { id: space.mapId },
+      });
+  
+      if (!map) {
+        return res.status(404).json({ message: "Map not found" });
+      }
+  
+      return res.json({
+        width: space.width,
+        height: space.height,
+        tilemapJson: map.tilemapJson,
+        elements: space.elements.map((e) => ({
+          id: e.id,
+          x: e.x,
+          y: e.y,
+          width: e.element.width,
+          height: e.element.height,
+          imageUrl: e.element.imageUrl,
+          static: e.element.static,
+        })),
+      });
+    } catch (err) {
+      console.error("GET WORLD ERROR:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+/* =========================================================
    CREATE SPACE
    ========================================================= */
 router.post("/", userMiddleware, async (req, res) => {
@@ -28,29 +75,11 @@ router.post("/", userMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Validation failed" });
     }
 
-    // CASE 1: Blank space
-     // Step 2: If NO mapId is provided, create an EMPTY space
-    // This means user wants a blank canvas
-    if (!parsedData.data.mapId) {
-      const [w, h] = parsedData.data.dimensions.split("x");
-        // Dimensions are stored as string "100x200"
-      // So we split them into width and height
-      const width = parseInt(w);
-      const height = parseInt(h);
-// Create a new Space row in DB
-      const space = await db.space.create({
-        data: {
-          name: parsedData.data.name,
-          width,
-          height,
-          creatorId: req.userId,
-        },
-      });
- // Return spaceId to frontend so it can redirect user
-      return res.json({ spaceId: space.id });
-    }
+    const userId = req.user?.id ?? req.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    // CASE 2: Clone from map
+    
+    //  Clone from map
     
     const map = await db.map.findFirst({
       where: { id: parsedData.data.mapId },
@@ -71,7 +100,9 @@ router.post("/", userMiddleware, async (req, res) => {
           name: parsedData.data.name,
           width: map.width,
           height: map.height,
-          creatorId: req.userId,
+          mapId: map.id,  
+          //creatorId: userId,
+          creator: { connect: { id: userId } }, // ✅
         },
       });
 
@@ -110,8 +141,9 @@ router.delete("/element", userMiddleware, async (req, res) => {
       where: { id: parsedData.data.id },
       include: { space: true },
     });
+    const userId = req.user?.id ?? req.userId;
 
-    if (!spaceElement || spaceElement.space.creatorId !== req.userId) {
+    if (!spaceElement || spaceElement.space.creatorId !== userId) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
@@ -136,11 +168,13 @@ router.delete("/:spaceId", userMiddleware, async (req, res) => {
       select: { creatorId: true },
     });
 
+    const userId = req.user?.id ?? req.userId;
+
     if (!space) {
       return res.status(400).json({ message: "Space not found" });
     }
 
-    if (space.creatorId !== req.userId) {
+    if (space.creatorId !== userId) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
@@ -160,8 +194,10 @@ router.delete("/:spaceId", userMiddleware, async (req, res) => {
    ========================================================= */
 router.get("/all", userMiddleware, async (req, res) => {
   try {
+
+    const userId = req.user?.id ?? req.userId;
     const spaces = await db.space.findMany({
-      where: { creatorId: req.userId },
+      where: { creatorId: userId },
     });
 
     return res.json({
@@ -169,7 +205,7 @@ router.get("/all", userMiddleware, async (req, res) => {
         id: s.id,
         name: s.name,
         thumbnail: s.thumbnail,
-        dimensions: `${s.width}x${s.height}`,
+       
       })),
     });
   } catch (err) {
@@ -187,11 +223,12 @@ router.post("/element", userMiddleware, async (req, res) => {
     if (!parsedData.success) {
       return res.status(400).json({ message: "Validation failed" });
     }
+    const userId = req.user?.id ?? req.userId;
 
     const space = await db.space.findFirst({
       where: {
         id: req.body.spaceId,
-        creatorId: req.userId,
+        creatorId: userId,
       },
       select: {
         width: true,
@@ -235,6 +272,7 @@ router.post("/element", userMiddleware, async (req, res) => {
    ========================================================= */
 router.get("/:spaceId", async (req, res) => {
   try {
+    const userId = req.user?.id ?? req.userId;
     const space = await db.space.findUnique({
       where: { id: req.params.spaceId },
       include: {
@@ -270,5 +308,7 @@ router.get("/:spaceId", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
 
 export default router;

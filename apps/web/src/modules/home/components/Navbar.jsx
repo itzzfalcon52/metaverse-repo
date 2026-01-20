@@ -1,17 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { CircleIcon } from "lucide-react";
-import { Button } from "@/components/ui/button"; // shadcn button component
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
 const Navbar = () => {
-  const {isSignedIn,handleLogout} = useAuth()  // Simulated authentication status (replace with real logic)
+  const { isSignedIn, handleLogout, getUserData } = useAuth();
+
+  // getUserData is a useQuery(...) result, so the actual user is in getUserData.data
+  const user = getUserData?.data ?? null;
+
+  const role = useMemo(() => {
+    // supports either { role: "Admin" } or { user: { role: "Admin" } }
+    return user?.role ?? user?.user?.role ?? null;
+  }, [user]);
+
+  const isAdmin = role === "Admin";
 
   return (
-    <div className="w-full px-10 py-5 flex  justify-between bg-gray-950 text-white shadow-md">
-      {/* Logo */}
+    <div className="w-full px-10 py-5 flex justify-between bg-gray-950 text-white shadow-md">
       <div className="flex items-center space-x-3">
         <Link href="/" className="text-2xl font-bold hover:opacity-80 flex items-center">
           <CircleIcon className="w-6 h-6 text-cyan-400" />
@@ -19,10 +28,7 @@ const Navbar = () => {
         </Link>
       </div>
 
-      {/* Navigation Links and Authentication Buttons */}
       <div className="flex items-center space-x-6">
-        {/* Navigation Links */}
-       
         <Link href="/profile" className="hover:text-cyan-400 transition-colors">
           Profile
         </Link>
@@ -33,18 +39,21 @@ const Navbar = () => {
           Contact
         </Link>
 
-        {/* Authentication Buttons */}
+        {/* Only show when signed in AND we have a user role that is Admin */}
+        {isSignedIn && isAdmin && (
+          <Link href="/admin/maps" className="hover:text-cyan-400 transition-colors">
+            Your Maps
+          </Link>
+        )}
+
         {isSignedIn ? (
-            <>
-           <Link href="/spaces" className="hover:text-cyan-400 transition-colors">
-           Your Spaces
-         </Link>
-          <Button
-            variant="destructive"
-            onClick={() =>handleLogout()}
-          >
-            Sign Out
-          </Button>
+          <>
+            <Link href="/spaces" className="hover:text-cyan-400 transition-colors">
+              Your Spaces
+            </Link>
+            <Button variant="destructive" onClick={() => handleLogout()}>
+              Sign Out
+            </Button>
           </>
         ) : (
           <>

@@ -1,71 +1,49 @@
+// ...existing code...
 import { useEffect, useState } from "react";
 import { sendMoveRequest } from "@/lib/sockets";
+import { useCreateWorldStore } from "@/stores/useWorldStore";
+
+const STEP = 8; // keep within server MAX_STEP
 
 const useMovement = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 }); // User's current position
-  const [animationFrame, setAnimationFrame] = useState(0); // Current animation frame (0-7)
-  const [isMoving, setIsMoving] = useState(false); // Whether the user is currently moving
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isMoving, setIsMoving] = useState(false);
 
-  // Handle keydown events for movement
+  const selfId = useCreateWorldStore((s) => s.selfId);
+  const movePlayer = useCreateWorldStore((s) => s.movePlayer);
+
   useEffect(() => {
     const handleKeyDown = (event) => {
-      let newX = position.x;
-      let newY = position.y;
-
+      let dx = 0, dy = 0;
       switch (event.key) {
-        case "ArrowUp":
-          newY -= 1;
-          break;
-        case "ArrowDown":
-          newY += 1;
-          break;
-        case "ArrowLeft":
-          newX -= 1;
-          break;
-        case "ArrowRight":
-          newX += 1;
-          break;
-        default:
-          return; // Ignore other keys
+        case "ArrowUp": dy = -STEP; break;
+        case "ArrowDown": dy = STEP; break;
+        case "ArrowLeft": dx = -STEP; break;
+        case "ArrowRight": dx = STEP; break;
+        default: return;
       }
 
-      // Update position and send move request
-      setPosition({ x: newX, y: newY });
+      const newX = position.x + dx;
+      const newY = position.y + dy;
+
       sendMoveRequest(newX, newY);
 
-      // Start walking animation
+      if (selfId) movePlayer(selfId, newX, newY);
+      setPosition({ x: newX, y: newY });
       setIsMoving(true);
     };
 
-    const handleKeyUp = () => {
-      // Stop walking animation when the key is released
-      setIsMoving(false);
-    };
+    const handleKeyUp = () => setIsMoving(false);
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [position]);
+  }, [position, selfId, movePlayer]);
 
-  // Handle animation frame updates
-  useEffect(() => {
-    if (!isMoving) {
-      setAnimationFrame(0); // Reset to idle frame when not moving
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setAnimationFrame((prevFrame) => (prevFrame + 1) % 8); // Cycle through frames 0-7
-    }, 100); // Update frame every 100ms
-
-    return () => clearInterval(interval);
-  }, [isMoving]);
-
-  return { position, animationFrame, isMoving };
+  return { position, isMoving };
 };
 
 export default useMovement;

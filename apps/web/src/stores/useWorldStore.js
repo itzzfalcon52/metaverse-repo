@@ -1,5 +1,12 @@
 import { create } from "zustand"; // Import Zustand's `create` function to create a state store
 
+function getJwtFromCookie() {
+    // reads "jwt=..." from document.cookie
+    if (typeof document === "undefined") return "";
+    const m = document.cookie.match(/(?:^|;\s*)jwt=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
 // Create a Zustand store for managing the state of the "world"
 export const useCreateWorldStore = create((set) => ({
     // State: The ID of the current user (player) in the world
