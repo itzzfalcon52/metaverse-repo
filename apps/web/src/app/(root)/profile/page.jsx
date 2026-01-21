@@ -25,12 +25,12 @@ const ProfilePage = () => {
     const fetchAvatars = async () => {
       try {
         const avatarList = [
-          "FemaleAdventurer/idle.png",
-          "FemalePerson/idle.png",
-          "MaleAdventurer/idle.png",
-          "MalePerson/idle.png",
-          "Robot/idle.png",
-          "Zombie/idle.png",
+          "FemaleAdventurer",
+          "FemalePerson",
+          "MaleAdventurer",
+          "MalePerson",
+          "Robot",
+          "Zombie",
         ];
         setAvatars(avatarList);
       } catch (error) {
@@ -89,7 +89,7 @@ const ProfilePage = () => {
                 <div className="flex flex-col items-center p-6 bg-[#0b0f14] rounded-lg border border-gray-800">
                   {user.avatarKey ? (
                     <img
-                      src={`/avatars/${user.avatarKey}`}
+                      src={`/avatars/${user.avatarKey}/idle.png`}
                       alt="Current Avatar"
                       className="w-32 h-32 object-contain mb-4"
                     />
@@ -142,7 +142,7 @@ const ProfilePage = () => {
                     onClick={() => handleAvatarSelect(avatar)}
                   >
                     <img
-                      src={`/avatars/${avatar}`}
+                      src={`/avatars/${avatar}/idle.png`}
                       alt={avatar}
                       className="w-full h-24 object-contain"
                     />

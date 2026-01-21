@@ -1,6 +1,45 @@
 import { create } from "zustand"; // Import Zustand's `create` function to create a state store
 
-function getJwtFromCookie() {
+
+
+export const useCreateWorldStore = create((set) => ({
+  selfId: null,
+
+  // IMPORTANT: players is a Map
+  players: new Map(),
+
+  setSelfId: (id) => set(() => ({ selfId: id })),
+
+  addPlayer(player) {
+    set((state) => {
+      const newPlayers = new Map(state.players);
+      newPlayers.set(player.id, player);
+      return { players: newPlayers };
+    });
+  },
+
+  removePlayer(id) {
+    set((state) => {
+      const newPlayers = new Map(state.players);
+      newPlayers.delete(id);
+      return { players: newPlayers };
+    });
+  },
+
+  movePlayer(id, x, y) {
+    set((state) => {
+      const newPlayers = new Map(state.players);
+      const p = newPlayers.get(id);
+      if (p) {
+        newPlayers.set(id, { ...p, x, y });
+      }
+      return { players: newPlayers };
+    });
+  },
+}));
+
+
+/*function getJwtFromCookie() {
     // reads "jwt=..." from document.cookie
     if (typeof document === "undefined") return "";
     const m = document.cookie.match(/(?:^|;\s*)jwt=([^;]+)/);
@@ -70,3 +109,4 @@ export const useCreateWorldStore = create((set) => ({
         });
     },
 }));
+*/

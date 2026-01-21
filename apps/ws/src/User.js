@@ -19,7 +19,7 @@ function getRandomString(length) {
     }
     return result;
 }
-
+const STEP = 32;
 // User class represents a connected user in the WebSocket server
  class User {
     constructor(ws) {
@@ -32,6 +32,7 @@ function getRandomString(length) {
 
         // Storing the WebSocket connection for this user
         this.ws = ws;
+       this.avatarKey=null
 
         // Clean up on socket close
         this.ws.on("close", () => this.destroy());
@@ -83,6 +84,21 @@ function getRandomString(length) {
                     // Assigning the user ID to this user instance
                     this.userId = userId;
 
+                    // 🔥 FETCH USER FROM DB TO GET AVATAR
+                    const dbUser = await db.user.findUnique({
+                        where: { id: userId },
+                        select: { avatarKey: true }
+                    });
+
+                    if (!dbUser) {
+                       this.ws.close();
+                        return;
+                    }
+
+                    // store on this instance
+                    this.avatarKey = dbUser.avatarKey || "FemaleAdventurer"; // fallback
+
+
                     // Fetching the space from the database using the space ID
                     const space = await db.space.findFirst({
                         where: {
@@ -103,15 +119,16 @@ function getRandomString(length) {
                     RoomManager.getInstance().addUser(spaceId, this);
 
                     // Randomly assigning the user's spawn position within the space dimensions
-                    this.x = Math.floor(Math.random() * space?.width);
-                    this.y = Math.floor(Math.random() * space?.height);
+                    this.x = Math.floor(Math.random() * (space.width / STEP)) * STEP;
+                    this.y = Math.floor(Math.random() * (space.height / STEP)) * STEP;
+          
 
                     // Sending a "space-joined" message to the user with their spawn position and other users in the room
                     this.send({
                         type: "space-joined",
                         payload: {
                             // include self identifiers so client can track me
-                            self: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+                            self: { id: this.id, userId: this.userId, x: this.x, y: this.y, avatarKey: this.avatarKey },
                             spawn: {
                                 x: this.x,
                                 y: this.y
@@ -119,7 +136,7 @@ function getRandomString(length) {
                             // include others with ids and positions if available
                             users: RoomManager.getInstance().rooms.get(spaceId)
                                 ?.filter(x => x.id !== this.id)
-                                ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y })) ?? []
+                                ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y , avatarKey: u.avatarKey})) ?? []
                         }
                     });
 
@@ -130,7 +147,8 @@ function getRandomString(length) {
                             id: this.id,
                             userId: this.userId,
                             x: this.x,
-                            y: this.y
+                            y: this.y,
+                            avatarKey: this.avatarKey
                         }
                     }, this, this.spaceId);
                     break;
@@ -173,25 +191,32 @@ function getRandomString(length) {
                     const moveX = parsedData.payload.x;
                     const moveY = parsedData.payload.y;
 
-                    const dx = moveX - this.x;
-                    const dy = moveY - this.y;
+                    // Calculating the displacement in x and y directions
+                    const xDisplacement = Math.abs(this.x - moveX);
+                    const yDisplacement = Math.abs(this.y - moveY);
+         
 
-                    const MAX_STEP = 8; // pixels per tick
+                    console.log("MOVE TRY", this.x, this.y, "→", moveX, moveY);
 
-                    if (Math.abs(dx) <= MAX_STEP && Math.abs(dy) <= MAX_STEP) {
+
+                    // Allowing movement only if it's a single step in any direction
+                    if ((xDisplacement == STEP && yDisplacement == 0) || (xDisplacement == 0 && yDisplacement == STEP)) {
+                        // Updating the user's position
                         this.x = moveX;
-                        this.y = moveY;  
+                        this.y = moveY;
 
                         // Broadcasting the movement to other users in the room
                         RoomManager.getInstance().broadcast({
                             type: "movement",
-                            payload: {
-                                id: this.id,
-                                userId: this.userId,
-                                x: this.x,
-                                y: this.y
-                            }
-                        }, this, this.spaceId);
+                            payload: { id: this.id, userId: this.userId, x: this.x, y: this.y, avatarKey: this.avatarKey }
+                          }, this, this.spaceId);
+                          
+                          // ALSO send to self
+                          this.send({
+                            type: "movement",
+                            payload: { id: this.id, userId: this.userId, x: this.x, y: this.y, avatarKey: this.avatarKey }
+                          });
+                          
                         return;
                     }
 
@@ -200,27 +225,30 @@ function getRandomString(length) {
                         type: "movement-rejected",
                         payload: {
                             x: this.x,
-                            y: this.y
+                            y: this.y,
+                            avatarKey: this.avatarKey
                         }
                     });
+                    console.log("MOVE REJECTED", this.x, this.y, "→", moveX, moveY);
             }
         });
     }
 
     // Method to handle user disconnection
     destroy() {
-        // Broadcasting a "user-left" message to other users in the room
+        if (!this.spaceId) return;
+      
         RoomManager.getInstance().broadcast({
-            type: "user-left",
-            payload: {
-                id: this.id,
-                userId: this.userId
-            }
+          type: "user-left",
+          payload: {
+            id: this.id,
+            userId: this.userId
+          }
         }, this, this.spaceId);
-
-        // Removing the user from the room in RoomManager
+      
         RoomManager.getInstance().removeUser(this, this.spaceId);
-    }
+      }
+      
 
     // Method to send a message to the user via WebSocket
     send(payload) {

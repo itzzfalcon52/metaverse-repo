@@ -1,49 +1,49 @@
-// ...existing code...
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { sendMoveRequest } from "@/lib/sockets";
 import { useCreateWorldStore } from "@/stores/useWorldStore";
+import {toast} from "sonner";
 
-const STEP = 8; // keep within server MAX_STEP
+const STEP = 32;
 
-const useMovement = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isMoving, setIsMoving] = useState(false);
-
+export default function useMovement() {
   const selfId = useCreateWorldStore((s) => s.selfId);
-  const movePlayer = useCreateWorldStore((s) => s.movePlayer);
+  const players = useCreateWorldStore((s) => s.players);
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      let dx = 0, dy = 0;
-      switch (event.key) {
-        case "ArrowUp": dy = -STEP; break;
-        case "ArrowDown": dy = STEP; break;
-        case "ArrowLeft": dx = -STEP; break;
-        case "ArrowRight": dx = STEP; break;
-        default: return;
+    function handleKey(e) {
+      if (!window.__canMove) return;
+      if (!selfId) return;
+
+      const me = players.get(selfId);
+      if (!me) return;
+
+      let dx = 0;
+      let dy = 0;
+
+      if (e.key === "ArrowUp") dy = -STEP;
+      if (e.key === "ArrowDown") dy = STEP;
+      if (e.key === "ArrowLeft") dx = -STEP;
+      if (e.key === "ArrowRight") dx = STEP;
+
+      if (!dx && !dy) return;
+
+      const nextX = me.x + dx;
+      const nextY = me.y + dy;
+
+      const tileX = nextX / 32;
+      const tileY = nextY / 32;
+      
+      if (window.__phaserScene?.isWallTile(tileX, tileY)) {
+        toast.error("You hit a wall!");
+        console.log("🧱 BLOCKED", tileX, tileY);
+        return;
       }
 
-      const newX = position.x + dx;
-      const newY = position.y + dy;
+      // ✅ Allowed → send to server
+      sendMoveRequest(nextX, nextY);
+    }
 
-      sendMoveRequest(newX, newY);
-
-      if (selfId) movePlayer(selfId, newX, newY);
-      setPosition({ x: newX, y: newY });
-      setIsMoving(true);
-    };
-
-    const handleKeyUp = () => setIsMoving(false);
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [position, selfId, movePlayer]);
-
-  return { position, isMoving };
-};
-
-export default useMovement;
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [selfId, players]);
+}
