@@ -6,9 +6,11 @@ import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+
 const Login = () => {
   const { handleLogin, isSignedIn } = useAuth();
   const router = useRouter();
+  
   const {
     register,
     handleSubmit,
@@ -21,7 +23,9 @@ const Login = () => {
     handleLogin.mutate(data, {
       onSuccess: () => {
         console.log("Login successful!");
-        router.push("/spaces");
+        const params = new window.URLSearchParams(window.location.search);
+        const redirectTo = params.get("redirectTo") || "/spaces";
+         router.push(redirectTo);
       },
       onError: (error) => {
         console.error("Login failed:", error);
@@ -30,57 +34,7 @@ const Login = () => {
   };
 
   // If user is already signed in, show a message
-  if (isSignedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0b0f14]">
-        <div className="bg-[#151a21] border border-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md text-center">
-          <div className="mb-6">
-            <svg
-              className="w-20 h-20 text-cyan-400 mx-auto mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              You're Already <span className="text-cyan-400">Logged In</span>
-            </h1>
-            <p className="text-gray-400">
-              You already have an active session. Ready to explore?
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <Link
-              href="/profile"
-              className="block w-full px-4 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-lg transition-all duration-300"
-            >
-              Go to Profile
-            </Link>
-            <Link
-              href="/spaces"
-              className="block w-full px-4 py-3 bg-transparent border-2 border-cyan-500 hover:bg-cyan-500/10 text-cyan-400 font-medium rounded-lg transition-all duration-300"
-            >
-              Explore Spaces
-            </Link>
-            <Link
-              href="/"
-              className="block w-full px-4 py-3 text-gray-400 hover:text-white transition-all duration-300"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+ 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#0b0f14]">
       <div className="bg-[#151a21] border border-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">

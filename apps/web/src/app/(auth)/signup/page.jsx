@@ -1,7 +1,7 @@
 import React from "react";
 import Signup from "@/modules/auth/components/Signup";
 
-const LoginPage = () => {
+const SignUpPage = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-950">
       <Signup/>
@@ -9,4 +9,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignUpPage;
