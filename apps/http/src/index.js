@@ -8,6 +8,7 @@ const app = express();
 
 
 app.use(cookieParser());
+app.set("trust proxy", 1);
 
 const allowedOrigins = [
   "http://localhost:3002",

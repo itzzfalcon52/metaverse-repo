@@ -39,8 +39,8 @@ const signToken = (id,role) => {
           Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000
       ),
       httpOnly: true, //so that cookie cannot be modified by browser
-      sameSite: "Lax", //CSRF protection
-      secure: false  
+      sameSite: "none", //CSRF protection
+      secure: true, //cookie only sent over https
     };
   
     // Secure cookie only in production (HTTPS only)
