@@ -9,9 +9,20 @@ const app = express();
 
 app.use(cookieParser());
 
+const allowedOrigins = [
+  "http://localhost:3002",
+  "https://metaverse-repo-web-xqc5.vercel.app"
+];
+
 app.use(cors({
-  origin: "https://metaverse-repo-web-xqc5.vercel.app/",   // frontend origin
-  credentials: true                  // allow cookies
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
 
 app.use(express.json());
