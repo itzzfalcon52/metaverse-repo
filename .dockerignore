@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/build
+**/.git
+**/.env
+**/.DS_Store
+**/*.log
+**/coverage
+**/.cache
+**/prisma/migrations
+**/tmp
+**/temp

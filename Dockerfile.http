@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy entire monorepo
+COPY . .
+
+# Install workspace deps
+RUN npm install
+
+# 🔥 Build all packages (so @repo/db/dist exists)
+RUN npm run build
+
+# 🔥🔥🔥 Generate Prisma INSIDE packages/db
+WORKDIR /app/packages/db
+RUN npx prisma generate
+
+# Go back to HTTP app
+WORKDIR /app/apps/http
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]
