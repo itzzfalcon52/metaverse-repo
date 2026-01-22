@@ -1,135 +1,314 @@
-# Turborepo starter
+# 🌐 Metaverse 2D Multiplayer Platform
 
-This Turborepo starter is maintained by the Turborepo core team.
+🚀 **Live Demo:**  
+👉 Web App: https://metaverse-repo-web-xqc5.vercel.app  
+👉 Backend API: https://metaverse-repo.onrender.com  
+👉 WebSocket Server: https://metaverse-repo-ws.onrender.com  
 
-## Using this example
+##  Test Login Credentials
 
-Run the following command:
+You can use the following test account to explore the platform:
 
-```sh
-npx create-turbo@latest
+Username: falcon-0.12304315669971455
+Password: 123456
+
+
+> ⚠️ This is a public demo account. Please don’t change its password.
+
+---
+
+
+---
+
+##  What is this?
+
+This is a **real-time 2D multiplayer metaverse platform** inspired by Gather, Zep, and Spatial.
+
+Users can:
+
+- Sign up / log in
+- Create and join spaces (rooms)
+- Walk around in a 2D world
+- See other users moving in real-time
+- Chat with people in the same space
+- Use avatars
+- Experience true multiplayer via WebSockets
+
+Built fully from scratch with **modern full-stack + realtime architecture**.
+
+---
+
+##  Features
+
+###  Authentication & Accounts
+- JWT-based authentication
+- Signup / Login / Logout
+- Secure password hashing using bcrypt
+- Protected routes using Next.js middleware
+- Persistent login using tokens
+
+---
+
+###  Spaces (Rooms)
+- Users can:
+  - Create spaces
+  - Join spaces
+- Each space has:
+  - Width & height
+  - Tile-based map
+  - Collision grid
+- Each space is a **separate multiplayer room**
+
+---
+
+###  Multiplayer System (Core Feature)
+
+- Real-time communication using **WebSockets**
+- When a user joins a space:
+  - Server assigns a spawn position
+  - Broadcasts to other users
+- When a user moves:
+  - Position is validated on server
+  - Movement is broadcast to all players
+- When a user leaves:
+  - Others are notified instantly
+
+---
+
+###  Movement System
+
+- Grid-based movement (32px steps)
+- Server-authoritative movement
+- Collision checked
+- Invalid moves are rejected
+- Everyone stays in sync
+
+---
+
+###  Avatars
+
+- Each user has an avatar
+- Avatar is fetched from DB on join
+- Avatar is synced to all players in the room
+
+---
+
+###  Chat System
+
+- Real-time chat inside each space
+- Messages are broadcast only inside the room
+- Timestamped messages
+- Server-validated messages
+
+---
+
+###  Game Engine (Phaser)
+
+- Map rendering using **Phaser 3**
+- Tilemap based world
+- Layers:
+  - Floor
+  - Walls
+  - Foreground
+  - Collision grid
+- Smooth camera movement
+- Multiplayer sprite sync
+
+---
+
+###  Admin System
+
+- Admin can:
+  - Create maps
+  - Create elements
+  - Control the world layout
+
+---
+
+#  Future Updates (Roadmap)
+
+This project is just getting started. Planned features:
+
+##   Multiple Maps
+
+Different worlds
+
+Different themes
+
+Map selector UI
+
+Teleport between maps
+
+##  Video & Voice Chat
+
+WebRTC based voice chat
+
+Proximity-based audio
+
+Optional video rooms
+
+##  Custom Avatars
+
+Avatar editor
+
+Upload avatar skins
+
+NFT/avatar marketplace (maybe 👀)
+
+##  Private Rooms
+
+Invite-only spaces
+
+Password protected spaces
+
+Team rooms
+
+##  Interactions
+
+Sit on chairs
+
+Click objects
+
+Open doors
+
+Mini-games inside spaces
+
+
+##  Mobile Support
+
+Touch controls
+
+Responsive UI
+
+PWA mode
+
+##  Architecture
+
+metaverse-repo/
+├── apps/
+│ ├── web/ (Next.js frontend)
+│ ├── http/ (Express REST API)
+│ └── ws/ (WebSocket realtime server)
+│
+├── packages/
+│ └── db/ (Prisma + DB client)
+
+
+---
+
+##  Tech Stack
+
+###  Frontend
+- Next.js 16 (App Router)
+- React
+- Tailwind CSS
+- Phaser 3 (Game Engine)
+- React Query
+- Axios
+- Zod
+
+---
+
+###  Backend (HTTP API)
+- Node.js
+- Express
+- Prisma ORM
+- PostgreSQL (Neon)
+- JWT Authentication
+- bcrypt
+
+---
+
+###  Realtime Server
+- Node.js
+- WebSocket (`ws`)
+- JWT verification
+- Room Manager
+- Server-authoritative movement
+
+---
+
+###  Database
+- PostgreSQL (Neon)
+- Prisma ORM
+
+---
+
+###  Dev & Infra
+- Turborepo (Monorepo)
+- Vercel (Frontend)
+- Render (Backend + WS)
+- GitHub
+
+---
+
+##  Security
+
+- Password hashing using bcrypt
+- JWT authentication
+- Token verification on WebSocket join
+- Server-authoritative movement (anti-cheat)
+- Protected API routes
+
+---
+
+## 🌍 How Multiplayer Works (High Level)
+
+1. User logs in → gets JWT
+2. Frontend connects to WebSocket
+3. Sends:
+```bash 
+{
+  "type": "join",
+  "payload": {
+    "spaceId": "...",
+    "token": "JWT"
+  }
+}
 ```
+4.Server:
 
-## What's inside?
+Verifies token
 
-This Turborepo includes the following packages/apps:
+Fetches user from DB
 
-### Apps and Packages
+Assigns spawn
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Adds user to room
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+Broadcasts presence
 
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+Movement:
+```bash
+{
+  "type": "move",
+  "payload": { "x": 64, "y": 128 }
+}
+```
+# 🚀 How to Run Locally
+1️⃣ Clone repo
+```bash
+git clone https://github.com/your-username/metaverse-repo.git
+cd metaverse-repo
+```
+2️⃣ Install deps
+```bash
+npm install
 
 ```
-cd my-turborepo
+3️⃣ Setup env
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+Create .env in:
+```bash
+apps/http
+apps/ws
+packages/db
 ```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
+4️⃣ Run everything
+```bash
+npm run dev
 ```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+# 🧑‍💻 Author
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Built by Hussain Taher Kagalwala
+BITS Pilani, Hyderabad Campus
