@@ -13,7 +13,7 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/v1/me", { withCredentials: true });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1/me`, { withCredentials: true });
         setUser(response.data.user);
         setSelectedAvatar(response.data.user.avatarKey || "");
       } catch (error) {
@@ -55,7 +55,7 @@ const ProfilePage = () => {
 
     setLoading(true);
     try {
-      await axios.post("http://localhost:3000/api/v1/user/avatar", { avatarKey: selectedAvatar }, { withCredentials: true });
+      await axios.post(`${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1/user/avatar`, { avatarKey: selectedAvatar }, { withCredentials: true });
       toast.success("Avatar updated successfully!");
       setUser((prev) => ({ ...prev, avatarKey: selectedAvatar }));
     } catch (error) {

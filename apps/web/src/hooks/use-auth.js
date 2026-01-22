@@ -12,7 +12,7 @@ export function useAuth() {
 
   // Axios instance with credentials enabled for authenticated requests
   const axiosInstance = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.NEXT_PUBLIC_HHTP_URL,
     withCredentials: true, // Include cookies in requests
   });
 
@@ -40,7 +40,7 @@ export function useAuth() {
   const handleSignUp = useMutation({
     mutationKey: ["auth", "signup"],
     mutationFn: async ({ username, password }) => {
-      const response = await axios.post(`http://localhost:3000/api/v1/signup`, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1/signup`, {
         username,
         password,
         type: "user",
@@ -61,7 +61,7 @@ export function useAuth() {
   const handleLogin = useMutation({
     mutationKey: ["auth", "login"],
     mutationFn: async ({ username, password }) => {
-      const response = await axios.post(`http://localhost:3000/api/v1/login`, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1/login`, {
         username,
         password,
       },{withCredentials:true});
@@ -83,7 +83,7 @@ export function useAuth() {
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:3000/api/v1/logout", {}, { withCredentials: true });
+      await axios.post(`${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1/logout`, {}, { withCredentials: true });
       toast.success("Logged out successfully.");
     } catch (e) {
       toast.error("Logout failed.");

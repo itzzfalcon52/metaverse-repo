@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-const API = "http://localhost:3000/api/v1";
+const API = `${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1`;
 
 export function useElements() {
   return useQuery({

@@ -1,7 +1,7 @@
 let socket = null;
 
 export function connectSocket() {
-  socket = new WebSocket("ws://localhost:3001");
+  socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
 
   socket.onopen = () => console.log("WS connected");
   socket.onclose = () => (socket = null);

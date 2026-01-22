@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 export const axiosInstance = axios.create({
-  baseURL: "http://localhost:3000/api/v1",
+  baseURL: `${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1`,
   withCredentials: true,
 });
 

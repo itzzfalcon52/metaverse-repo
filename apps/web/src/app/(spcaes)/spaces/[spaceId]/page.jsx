@@ -46,7 +46,7 @@ export default function SpaceView() {
     setLoadingWorld(true);
 
     axios
-      .get(`http://localhost:3000/api/v1/space/${spaceId}/world`, {
+      .get(`${process.env.NEXT_PUBLIC_HHTP_URL}/api/v1/space/${spaceId}/world`, {
         withCredentials: true,
       })
       .then((res) => {
