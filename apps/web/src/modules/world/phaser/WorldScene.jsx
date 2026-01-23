@@ -39,19 +39,27 @@ export class WorldScene extends Phaser.Scene {
       console.error("❌ mapData missing");
       return;
     }
+
+     // ✅ SET MAP DATA + OFFSET FIRST
+     this.mapData = map;
+     this.mapOffsetX = this.mapData.x ?? 0;
+     this.mapOffsetY = this.mapData.y ?? 0;
+     this.tileSize = 32;
+   
   
     // Load collision grid
-    const csv = this.cache.text.get("collision");
-    this.collisionGrid = csv
-  .trim()
-  .split("\n")
-  .map(row =>
-    row
-      .split(",")
-      .filter(v => v !== "")   // 🔥 REMOVE EMPTY
-      .map(n => Number(n))
-  );
-    this.tileSize = 32;
+    const raw = this.cache.text.get("collision") ?? "";
+    const rows = raw.trim().split("\n");
+    this.collisionGrid = rows.map((row) => {
+      const cols = row.split(",");
+      return cols.map((v) => {
+        const t = v.trim();
+        if (t === "") return 0;        // preserve column with 0
+        const n = Number(t);
+        return Number.isFinite(n) ? n : 0;
+      });
+    });
+    
 
     console.log(
         "Grid size:",
@@ -61,12 +69,22 @@ export class WorldScene extends Phaser.Scene {
       
   
     console.log("🧱 Collision grid loaded", this.collisionGrid);
+
+     // Optional sanity check: expect width/height in tiles
+  const expectedCols = Math.floor(map.width / this.tileSize);
+  const expectedRows = Math.floor(map.height / this.tileSize);
+  if (
+    this.collisionGrid.length !== expectedRows ||
+    this.collisionGrid[0]?.length !== expectedCols
+  ) {
+    console.warn(
+      "IntGrid size mismatch",
+      { expectedRows, expectedCols },
+      { gotRows: this.collisionGrid.length, gotCols: this.collisionGrid[0]?.length }
+    );
+  }
   
-    // ✅ SET MAP DATA + OFFSET FIRST
-    this.mapData = map;
-    this.mapOffsetX = this.mapData.x ?? 0;
-    this.mapOffsetY = this.mapData.y ?? 0;
-  
+   
     const offsetX = this.mapOffsetX;
     const offsetY = this.mapOffsetY;
   
@@ -80,33 +98,39 @@ export class WorldScene extends Phaser.Scene {
   
     // Setup camera
     this.cameras.main.setBounds(offsetX, offsetY, map.width, map.height);
+    const viewW = this.scale.width;
+    const viewH = this.scale.height;
+    const padding = 8;
+    const zoomX = (viewW - padding) / map.width;
+    const zoomY = (viewH - padding) / map.height;
+    this.cameras.main.setZoom(Math.min(zoomX, zoomY));
+
     this.cameras.main.centerOn(
       offsetX + map.width / 2,
       offsetY + map.height / 2
     );
   
-    const zoomX = this.scale.width / map.width;
-    const zoomY = this.scale.height / map.height;
-    const zoom = Math.min(zoomX, zoomY);
-    this.cameras.main.setZoom(zoom);
-  
+   
     console.log("✅ Map rendered", map.width, map.height);
   
-    // ✅ NOW DRAW DEBUG WALLS
-    for (let y = 0; y < this.collisionGrid.length; y++) {
-      for (let x = 0; x < this.collisionGrid[0].length; x++) {
-        if (this.collisionGrid[y][x] === 1) {
-          this.add.rectangle(
-            offsetX + x * 32 + 16,
-            offsetY + y * 32 + 16,
-            32,
-            32,
+   // Draw debug walls from aligned grid
+  for (let ry = 0; ry < this.collisionGrid.length; ry++) {
+    const row = this.collisionGrid[ry];
+    for (let rx = 0; rx < row.length; rx++) {
+      if (row[rx] === 1) {
+        this.add
+          .rectangle(
+            offsetX + rx * this.tileSize + this.tileSize / 2,
+            offsetY + ry * this.tileSize + this.tileSize / 2,
+            this.tileSize,
+            this.tileSize,
             0xff0000,
             0.4
-          ).setDepth(999);
-        }
+          )
+          .setDepth(999);
       }
     }
+  }
   
     console.log("🟥 Debug walls drawn");
   }

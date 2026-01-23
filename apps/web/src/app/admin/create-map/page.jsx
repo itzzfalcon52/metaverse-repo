@@ -1,3 +1,6 @@
+// JSX
+// filepath: /Users/hussain/Desktop/web dev projects/metaverse-app/metaverse-repo/apps/web/src/app/admin/create-map/page.jsx
+// ...existing code...
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -9,6 +12,11 @@ import { useElements,useImportElements } from "@/hooks/use-elements";
 import {useMaps,useCreateMap,useUpdateMapElements} from "@/hooks/use-maps";
 import { useRequireAuth } from "@/hooks/use-protected-auth";
 
+/**
+ * validatePlacements:
+ * - Pure validation utility, unchanged logic.
+ * - Confirms mapData exists, checks bounds, grid snapping, and element sizes against the map size and offset.
+ */
 function validatePlacements({ placements, mapData, tileSize }) {
   const errors = [];
 
@@ -59,34 +67,56 @@ function validatePlacements({ placements, mapData, tileSize }) {
 }
 
 export default function AdminMapEditorPage() {
+  /**
+   * Auth guard: ensures only authenticated users can access this page.
+   * Unchanged logic; it may redirect or throw based on your hook implementation.
+   */
   useRequireAuth();
+
   const router = useRouter();
 
+  // placements: current set of placed elements in the editor (controlled by CreateGame)
   const [placements, setPlacements] = useState([]);
+  // saving: global UI state for disabling actions while saving
   const [saving, setSaving] = useState(false);
+  // mapName: user-provided name for the map
   const [mapName, setMapName] = useState("");
 
+  // mutations & queries: import elements, list elements, create map, update placements
   const importMutation = useImportElements();
   const { data: elements = [], isLoading, isError } = useElements();
-
   const createMapMutation = useCreateMap();
   const updateMapElementsMutation = useUpdateMapElements();
 
+  // static editor config: base map and tile size
   const mapKey = "map1";
   const tileSize = 32;
 
-  // Optional: if you want a static thumbnail per base map
+  // thumbnail: recommended preview image for the map (composite)
   const thumbnail = useMemo(() => `/${mapKey}/thumbnail.png`, [mapKey]);
 
+  /**
+   * Boot the Phaser editor game:
+   * - createGame mounts the Phaser instance into #game-container.
+   * - onPlacementsChanged updates React state on interactions.
+   * - destroyGame cleans up on component unmount.
+   */
   useEffect(() => {
     createGame({ mapKey, tileSize, onPlacementsChanged: setPlacements });
     return () => destroyGame();
   }, []);
 
+  /**
+   * Toast on error while loading available elements.
+   */
   useEffect(() => {
     if (isError) toast.error("Failed to load elements");
   }, [isError]);
 
+  /**
+   * Import elements from public folder:
+   * - This populates the palette with static images from /public/elements.
+   */
   const importFromPublic = () => {
     importMutation.mutate(
       { folder: "/elements", static: true },
@@ -97,6 +127,10 @@ export default function AdminMapEditorPage() {
     );
   };
 
+  /**
+   * Drag start:
+   * - Emits a custom event to Phaser with element details to begin drag placement.
+   */
   const dragStart = (el) => {
     window.dispatchEvent(
       new CustomEvent("editor:dragstart", {
@@ -105,8 +139,20 @@ export default function AdminMapEditorPage() {
     );
   };
 
+  /**
+   * Drag end:
+   * - Signals Phaser the drag action has ended.
+   */
   const dragEnd = () => window.dispatchEvent(new CustomEvent("editor:dragend"));
 
+  /**
+   * Save and continue:
+   * - Loads map JSON.
+   * - Validates placements (grid snapping + bounds).
+   * - Creates the map and persists placements.
+   * - Navigates to /admin/maps on success.
+   * Logic unchanged; only comments added.
+   */
   const saveAndContinue = async () => {
     if (!mapName.trim()) return toast.error("Map name is required");
     if (!placements.length) return toast.error("Place at least one element before saving");
@@ -152,84 +198,124 @@ export default function AdminMapEditorPage() {
     }
   };
 
+  // busy: global pending state to disable buttons while any mutation runs
   const busy = saving || importMutation.isPending || createMapMutation.isPending || updateMapElementsMutation.isPending;
 
   return (
+    /**
+     * Root page container:
+     * - min-h-screen ensures full viewport height.
+     * - We keep a dark background and white text.
+     */
     <div className="min-h-screen bg-[#0b0f14] text-white">
+      {/**
+       * Navbar remains at top; the editor region below will fill remaining viewport height.
+       */}
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-6">
-        <aside className="w-[360px] bg-[#151a21] border border-gray-800 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">
-              Elements <span className="text-cyan-400">Palette</span>
-            </h2>
+      {/**
+       * Main content row:
+       * - Use flex with a fixed-width sidebar and a flexible editor grid.
+       * - max-w-7xl and mx-auto center the layout on large screens.
+       * - We ensure the inner row consumes the available viewport height using min-h-[calc(100vh-...)]
+       *   If Navbar height changes, you can replace 64px with your actual navbar height.
+       */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex gap-6 min-h-[calc(100vh-64px-64px)]">
+          {/**
+           * Elements sidebar:
+           * - Fixed width.
+           * - Scrollable if content exceeds viewport height (overflow-y-auto).
+           * - No logic changes; only layout tweaks to ensure full-height next to the grid.
+           */}
+          <aside className="w-[360px] bg-[#151a21] border border-gray-800 rounded-xl p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">
+                Elements <span className="text-cyan-400">Palette</span>
+              </h2>
+
+              <button
+                onClick={importFromPublic}
+                disabled={busy}
+                className={`text-xs px-3 py-2 rounded-md border transition ${
+                  busy
+                    ? "border-gray-700 text-gray-400 cursor-not-allowed"
+                    : "border-cyan-500 text-cyan-400 hover:bg-cyan-500/10"
+                }`}
+              >
+                {importMutation.isPending ? "Importing..." : "Import"}
+              </button>
+            </div>
+
+            <label className="block text-sm text-gray-300 mb-2">Map Name</label>
+            <input
+              value={mapName}
+              onChange={(e) => setMapName(e.target.value)}
+              placeholder="e.g. Level 0"
+              className="w-full mb-4 px-3 py-2 rounded-md bg-[#0b0f14] border border-gray-800 outline-none focus:border-cyan-500"
+            />
+
+            {isLoading ? (
+              <div className="text-sm text-gray-400">Loading elements...</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {elements.map((el) => (
+                  <div
+                    key={el.id}
+                    onMouseDown={() => dragStart(el)}
+                    onMouseUp={dragEnd}
+                    className="bg-[#0b0f14] border border-gray-800 hover:border-cyan-500/60 rounded-lg p-2 cursor-grab active:cursor-grabbing transition"
+                  >
+                    <img src={el.imageUrl} alt="" className="w-full h-14 object-contain" draggable={false} />
+                    <div className="mt-2 text-[10px] text-gray-400 truncate">
+                      {el.width}×{el.height}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <button
-              onClick={importFromPublic}
+              onClick={saveAndContinue}
               disabled={busy}
-              className={`text-xs px-3 py-2 rounded-md border transition ${
-                busy
-                  ? "border-gray-700 text-gray-400 cursor-not-allowed"
-                  : "border-cyan-500 text-cyan-400 hover:bg-cyan-500/10"
+              className={`mt-6 w-full py-3 rounded-lg font-semibold transition ${
+                busy ? "bg-gray-700 cursor-not-allowed" : "bg-cyan-500 hover:bg-cyan-600"
               }`}
             >
-              {importMutation.isPending ? "Importing..." : "Import"}
+              {busy ? "Saving..." : `Save & Continue (${placements.length})`}
             </button>
-          </div>
+          </aside>
 
-          <label className="block text-sm text-gray-300 mb-2">Map Name</label>
-          <input
-            value={mapName}
-            onChange={(e) => setMapName(e.target.value)}
-            placeholder="e.g. Level 0"
-            className="w-full mb-4 px-3 py-2 rounded-md bg-[#0b0f14] border border-gray-800 outline-none focus:border-cyan-500"
-          />
-
-          {isLoading ? (
-            <div className="text-sm text-gray-400">Loading elements...</div>
-          ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {elements.map((el) => (
-                <div
-                  key={el.id}
-                  onMouseDown={() => dragStart(el)}
-                  onMouseUp={dragEnd}
-                  className="bg-[#0b0f14] border border-gray-800 hover:border-cyan-500/60 rounded-lg p-2 cursor-grab active:cursor-grabbing transition"
-                >
-                  <img src={el.imageUrl} alt="" className="w-full h-14 object-contain" draggable={false} />
-                  <div className="mt-2 text-[10px] text-gray-400 truncate">
-                    {el.width}×{el.height}
-                  </div>
-                </div>
-              ))}
+          {/**
+           * Editor grid container:
+           * - flex-1: takes remaining width beside the sidebar.
+           * - Make it full available height with min-h-0 and a child that fills 100%.
+           * - overflow-hidden keeps the game canvas clean inside rounded borders.
+           */}
+          <main className="flex-1 bg-[#151a21] border border-gray-800 rounded-xl overflow-hidden flex flex-col min-h-0">
+            {/**
+             * Header bar inside editor:
+             * - Stays at top of the editor panel.
+             */}
+            <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+              <div className="font-semibold">
+                Map Editor: <span className="text-cyan-400">{mapKey}</span>
+              </div>
+              <div className="text-xs text-gray-400">Grid {tileSize}px</div>
             </div>
-          )}
 
-          <button
-            onClick={saveAndContinue}
-            disabled={busy}
-            className={`mt-6 w-full py-3 rounded-lg font-semibold transition ${
-              busy ? "bg-gray-700 cursor-not-allowed" : "bg-cyan-500 hover:bg-cyan-600"
-            }`}
-          >
-            {busy ? "Saving..." : `Save & Continue (${placements.length})`}
-          </button>
-        </aside>
-
-        <main className="flex-1 bg-[#151a21] border border-gray-800 rounded-xl overflow-hidden flex flex-col min-h-0">
-          <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-            <div className="font-semibold">
-              Map Editor: <span className="text-cyan-400">{mapKey}</span>
+            {/**
+             * Editor canvas area:
+             * - flex-1 ensures it consumes all remaining vertical space of the editor panel.
+             * - #game-container is set to w-full h-full so Phaser can size the canvas to fill it.
+             */}
+            <div className="p-3 flex-1 min-h-0">
+              <div id="game-container" className="w-full h-full rounded-lg border border-gray-800 overflow-hidden" />
             </div>
-            <div className="text-xs text-gray-400">Grid {tileSize}px</div>
-          </div>
-
-          <div className="p-3 flex-1 min-h-0">
-            <div id="game-container" className="w-full h-full rounded-lg border border-gray-800 overflow-hidden" />
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );
 }
+// ...existing code...

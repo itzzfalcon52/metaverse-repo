@@ -42,6 +42,7 @@ export async function createGame({ mapKey = "map1", tileSize = 32, onPlacementsC
     height, // initial canvas height
     backgroundColor: "#0b0f14",
     pixelArt: true, // avoids texture smoothing (useful for pixel-style assets)
+    render: { roundPixels: true },
 
     // Scale manager controls how the canvas adapts to its parent.
     // RESIZE makes the canvas match the container size exactly.

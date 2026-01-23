@@ -31,8 +31,10 @@ export class EditorScene extends Phaser.Scene {
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.drawLayers();
       this.drawGrid();
+      this,fitCameraToMap();
       this.setupDnD();
       this.setupPlacementControls();
+      this.setupResizeHandler();
     });
 
     (map.layers || []).forEach((file) => {
@@ -56,7 +58,35 @@ export class EditorScene extends Phaser.Scene {
     this.physics.world.setBounds(offsetX, offsetY, this.mapData.width, this.mapData.height);
 
     // Nice camera controls (optional)
-    this.cameras.main.centerOn(offsetX + this.mapData.width / 2, offsetY + this.mapData.height / 2);
+    //this.cameras.main.centerOn(offsetX + this.mapData.width / 2, offsetY + this.mapData.height / 2);
+  }
+
+  fitCameraToMap() {
+    const cam = this.cameras.main;
+    const offsetX = this.mapData.x ?? 0;
+    const offsetY = this.mapData.y ?? 0;
+    const mapW = this.mapData.width;
+    const mapH = this.mapData.height;
+  
+    const viewW = this.scale.width;
+    const viewH = this.scale.height;
+  
+    // Fit zoom (leave a small padding so grid edges are visible)
+    const padding = 8;
+    const zoomX = (viewW - padding) / mapW;
+    const zoomY = (viewH - padding) / mapH;
+    const zoom = Math.min(zoomX, zoomY);
+  
+    cam.setZoom(zoom);
+  
+    // Center the camera on the map rect after zoom
+    cam.centerOn(offsetX + mapW / 2, offsetY + mapH / 2);
+  }
+
+  setupResizeHandler() {
+    this.scale.on('resize', () => {
+      this.fitCameraToMap();
+    });
   }
 
   drawGrid() {

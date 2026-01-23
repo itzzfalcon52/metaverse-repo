@@ -80,6 +80,8 @@ export class EditorScene extends Phaser.Scene {
       this.drawGrid(); // overlay visible grid
       this.setupDnD(); // connect React events -> Phaser selection/ghost
       this.setupPlacementControls(); // click to place, right click to remove
+      this.fitCameraToMap();   
+      this.setupResizeHandler(); // handle container resize
     });
 
     // For each layer filename in JSON, queue an image file load
@@ -113,7 +115,7 @@ export class EditorScene extends Phaser.Scene {
     this.physics.world.setBounds(offsetX, offsetY, this.mapData.width, this.mapData.height);
 
     // Start camera centered on the map
-    this.cameras.main.centerOn(offsetX + this.mapData.width / 2, offsetY + this.mapData.height / 2);
+    //this.cameras.main.centerOn(offsetX + this.mapData.width / 2, offsetY + this.mapData.height / 2);
   }
 
   /**
@@ -143,6 +145,32 @@ export class EditorScene extends Phaser.Scene {
       g.lineBetween(offsetX, y, offsetX + cols * this.tileSize, y);
     }
   }
+
+  fitCameraToMap() {
+    const cam = this.cameras.main;
+    const offsetX = this.mapData.x ?? 0;
+    const offsetY = this.mapData.y ?? 0;
+    const mapW = this.mapData.width;
+    const mapH = this.mapData.height;
+  
+    const viewW = this.scale.width;
+    const viewH = this.scale.height;
+  
+    const padding = 8;
+    const zoomX = (viewW - padding) / mapW;
+    const zoomY = (viewH - padding) / mapH;
+    const zoom = Math.min(zoomX, zoomY);
+  
+    cam.setZoom(zoom);
+    cam.centerOn(offsetX + mapW / 2, offsetY + mapH / 2);
+  }
+
+  setupResizeHandler() {
+    this.scale.on("resize", () => {
+      this.fitCameraToMap();
+    });
+  }
+  
 
   /**
    * "DnD" here means: React tells Phaser "the user selected this element"
