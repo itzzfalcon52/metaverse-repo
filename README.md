@@ -1,5 +1,9 @@
 # 🌐 Metaverse 2D Multiplayer Platform
 
+## Demo Screenshot
+
+![Demo Screenshot](./demo.png)
+
 🚀 **Live Demo:**  
 👉 Web App: https://www.hangoutx.space/ 
 👉 Backend API: https://metaverse-repo.onrender.com  
