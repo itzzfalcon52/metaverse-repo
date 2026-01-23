@@ -12,7 +12,9 @@ app.set("trust proxy", 1);
 
 const allowedOrigins = [
   "http://localhost:3002",
-  "https://metaverse-repo-web-xqc5.vercel.app"
+  "https://metaverse-repo-web-xqc5.vercel.app",
+  "https://www.hangoutx.space"
+
 ];
 
 app.use(cors({

@@ -24,7 +24,7 @@ const Navbar = () => {
       <div className="flex items-center space-x-3">
         <Link href="/" className="text-2xl font-bold hover:opacity-80 flex items-center">
           <CircleIcon className="w-6 h-6 text-cyan-400" />
-          <span className="ml-2 text-cyan-400">MetaVerse</span>
+          <span className="ml-2 text-cyan-400">HANGOUTX</span>
         </Link>
       </div>
 
