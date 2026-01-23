@@ -1,7 +1,7 @@
 # 🌐 Metaverse 2D Multiplayer Platform
 
 🚀 **Live Demo:**  
-👉 Web App: https://metaverse-repo-web-xqc5.vercel.app  
+👉 Web App: https://www.hangoutx.space/ 
 👉 Backend API: https://metaverse-repo.onrender.com  
 👉 WebSocket Server: https://metaverse-repo-ws.onrender.com  
 
