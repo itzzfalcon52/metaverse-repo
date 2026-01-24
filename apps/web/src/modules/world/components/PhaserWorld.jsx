@@ -8,7 +8,7 @@ export default function PhaserWorld({ map }) {
     if (!map) return;
 
     createWorldGame({
-      mapKey: "map1",
+      world: map, // ✅ PASS FULL WORLD DATA FROM API
 
       // ✅ ALWAYS READ LIVE STORE
       getPlayers: () => useCreateWorldStore.getState().players,

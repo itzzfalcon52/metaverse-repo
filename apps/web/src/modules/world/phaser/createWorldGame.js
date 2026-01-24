@@ -3,7 +3,7 @@
 // ...existing code...
 let game;
 
-export async function createWorldGame({ mapKey, getPlayers, getSelfId }) {
+export async function createWorldGame({ world, getPlayers, getSelfId }) {
   if (typeof window === "undefined") return;
   if (game) return game;
 
@@ -33,7 +33,7 @@ export async function createWorldGame({ mapKey, getPlayers, getSelfId }) {
   });
 
   // Start the scene with provided getters (unchanged logic)
-  game.scene.start("WorldScene", { mapKey, getPlayers, getSelfId });
+  game.scene.start("WorldScene", { world, getPlayers, getSelfId });
 
   // Ensure canvas tracks container size changes (Mac/VS Code/Next layout)
   const onResize = () => {

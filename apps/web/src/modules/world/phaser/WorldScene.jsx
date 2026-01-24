@@ -36,33 +36,32 @@ export class WorldScene extends Phaser.Scene {
 
   // Store external callbacks (no logic changes)
   init(data) {
-    this.mapKey = data.mapKey;
+    this.world = data.world;                  // ✅ FULL WORLD FROM DB
+    this.mapData = data.world.tilemapJson;    // ✅ MAP JSON FROM DB
     this.getPlayers = data.getPlayers;
     this.getSelfId = data.getSelfId;
   }
 
   // Load map JSON + IntGrid, then enqueue layer images
   preload() {
-    this.load.json("mapData", `/${this.mapKey}/data.json`);
-    this.load.text("collision", `/${this.mapKey}/IntGrid.csv`);
-
-    this.load.once("filecomplete-json-mapData", () => {
-      const map = this.cache.json.get("mapData");
-      if (!map) return;
-
-      console.log("🗺️ Loading map layers:", map.layers);
-      (map.layers || []).forEach((file) => {
-        this.load.image(`layer:${file}`, `/${this.mapKey}/${file}`);
-      });
+    const map = this.mapData;
+    if (!map) return;
+  
+    (map.layers || []).forEach((file) => {
+      this.load.image(`layer:${file}`, `/${file.startsWith("/") ? file.slice(1) : this.mapKey + "/" + file}`);
     });
+  
+    // Load collision grid if you want (optional, keep your old one if needed)
+    this.load.text("collision", `/${this.mapKey}/IntGrid.csv`);
   }
 
   create() {
+    console.log("🌍 WORLD PAYLOAD:", this.world);
     // Expose for console debugging
     window.__phaserScene = this;
 
     // Read map JSON from cache
-    const map = this.cache.json.get("mapData");
+    const map = this.mapData; 
     if (!map) {
       console.error("❌ mapData missing");
       return;
@@ -121,6 +120,37 @@ export class WorldScene extends Phaser.Scene {
       const key = `layer:${file}`;
       this.add.image(offsetX, offsetY, key).setOrigin(0, 0).setDepth(0);
     });
+    // ===============================
+// RENDER SPACE ELEMENTS FROM DB
+// ===============================
+const elements = this.world?.elements || [];
+
+console.log("🧱 Rendering space elements:", elements);
+
+// Preload all element textures
+for (const el of elements) {
+  const key = `space-el:${el.id}`;
+  if (!this.textures.exists(key)) {
+    this.load.image(key, el.imageUrl);
+  }
+}
+
+// After load, place them
+this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+  for (const el of elements) {
+    const key = `space-el:${el.id}`;
+
+    const x = el.x + offsetX;
+    const y = el.y + offsetY;
+
+    this.add.image(x, y, key).setOrigin(0, 0).setDepth(5);
+  }
+});
+
+// Start loading if needed
+if (elements.length > 0) {
+  this.load.start();
+}
 
     // Camera bounds to map rect and zoom-to-fit with small padding
     this.cameras.main.setBounds(offsetX, offsetY, map.width, map.height);
