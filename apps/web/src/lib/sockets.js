@@ -2,6 +2,7 @@ let socket = null;
 
 export function connectSocket() {
   socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
+  console.log("WS ENV =", process.env.NEXT_PUBLIC_WS_URL);
 
   socket.onopen = () => console.log("WS connected");
   socket.onclose = () => (socket = null);

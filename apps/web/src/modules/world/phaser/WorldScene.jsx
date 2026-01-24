@@ -146,7 +146,7 @@ const x = el.x;
 const y = el.y;
 
 this.add.image(x, y, key).setOrigin(0, 0).setDepth(5);
-console.log("ELEMENT", el.x, el.y, "MAP OFFSET", offsetX, offsetY);
+//console.log("ELEMENT", el.x, el.y, "MAP OFFSET", offsetX, offsetY);
   }
 });
 
