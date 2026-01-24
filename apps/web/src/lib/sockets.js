@@ -1,14 +1,22 @@
 let socket = null;
 
 export function connectSocket() {
-  socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
-  console.log("WS ENV =", process.env.NEXT_PUBLIC_WS_URL);
+  if (socket && socket.readyState === WebSocket.OPEN) return socket;
+
+  const url = process.env.NEXT_PUBLIC_WS_URL;
+  console.log("WS CONNECT →", url);
+
+  socket = new WebSocket(url);
 
   socket.onopen = () => console.log("WS connected");
-  socket.onclose = () => (socket = null);
+  socket.onclose = () => {
+    console.log("WS closed");
+    socket = null;
+  };
 
   return socket;
 }
+
 
 export function sendMessage(type, payload) {
   if (!socket || socket.readyState !== WebSocket.OPEN) return;

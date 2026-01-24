@@ -20,11 +20,7 @@ export default function useWorldSocket(spaceID, token) {
   useEffect(() => {
     console.log("🧪 WS INIT", { spaceID, token });
 
-    if (!spaceID ) return;
-    if (!token) {
-      toast.error("Missing auth token. Please log in.");
-      return;
-    }
+    if (!spaceID || !token) return;
 
     const socket = connectSocket(token);
     window.__ws = socket;
@@ -34,7 +30,11 @@ export default function useWorldSocket(spaceID, token) {
     };
 
     socket.onmessage = (event) => {
+      console.log("📩 WS MESSAGE RAW:", event.data);
       const message = JSON.parse(event.data);
+      console.log("📩 WS MESSAGE PARSED:", message);
+
+     
 
       switch (message.type) {
         case "space-joined": {

@@ -204,6 +204,7 @@ if (elements.length > 0) {
 
   // Game loop: create sprites on first sight, then smooth-move + animate (unchanged)
   update() {
+    console.log("🎮 PLAYERS:", this.getPlayers(), "SELF:", this.getSelfId());
     const playersRaw = this.getPlayers();
     const selfId = this.getSelfId();
     if (!playersRaw || !selfId) return;
