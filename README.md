@@ -6,8 +6,8 @@
 
 🚀 **Live Demo:**  
 👉 Web App: https://www.hangoutx.space/ 
-👉 Backend API: https://metaverse-repo.onrender.com  
-👉 WebSocket Server: https://metaverse-repo-ws.onrender.com  
+👉 Backend API: https://api.hangoutx.space
+👉 WebSocket Server: wss://ws.hangoutx.space
 
 ##  Test Login Credentials
 
