@@ -154,12 +154,12 @@ router.post("/map/upload", async (req, res) => {
 
 // --- IMPORT ELEMENTS ENDPOINT UPDATED TO SUPPORT SUBFOLDERS ---
 // This endpoint now supports:
-// - Importing a specific subfolder: /elements/livingRoom OR /elements/library (by passing req.body.folder)
+// - Importing a specific subfolder: /elements/livingRoom OR /elements/Library (by passing req.body.folder)
 // - Importing both subfolders by default when no folder is provided
 // - Recursing only one level: png files directly inside each subfolder (no deep recursion)
 router.post("/elements/import", adminMiddleware, async (req, res) => {
   try {
-    // The client may pass: { folder: "/elements/livingRoom" } or { folder: "/elements/library" }
+    // The client may pass: { folder: "/elements/livingRoom" } or { folder: "/elements/Library" }
     // If not provided, we default to importing BOTH known subfolders.
     const { folder, static: isStatic = true } = req.body ?? {};
 
@@ -182,11 +182,11 @@ router.post("/elements/import", adminMiddleware, async (req, res) => {
     };
 
     // Determine which folders to import:
-    // - If `folder` is provided, import just that folder (must be "/elements/livingRoom" or "/elements/library").
+    // - If `folder` is provided, import just that folder (must be "/elements/livingRoom" or "/elements/Library").
     // - If not, import both subfolders by default.
     const targetFolders = folder
       ? [folder]
-      : ["/elements/livingRoom", "/elements/library"];
+      : ["/elements/livingRoom", "/elements/Library"];
 
     // Aggregate all PNG entries from selected folders
     const allPngs = [];
@@ -203,7 +203,7 @@ router.post("/elements/import", adminMiddleware, async (req, res) => {
     // If we found no files, return an informative 400 response
     if (allPngs.length === 0) {
       return res.status(400).json({
-        message: "No PNG files found. Ensure assets exist in /public/elements/livingRoom or /public/elements/library.",
+        message: "No PNG files found. Ensure assets exist in /public/elements/livingRoom or /public/elements/Library.",
         foldersScanned: targetFolders,
       });
     }

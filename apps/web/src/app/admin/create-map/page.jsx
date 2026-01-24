@@ -87,16 +87,16 @@ export default function AdminMapEditorPage() {
 
   /**
    * Sidebar category toggle:
-   * - livingRoom | library
+   * - livingRoom | Library
    * - Filters elements based on folder path inside public/elements.
-   * - We also import per selected folder: /elements/livingRoom or /elements/library.
+   * - We also import per selected folder: /elements/livingRoom or /elements/Library.
    */
   const [category, setCategory] = useState("livingRoom");
   const deriveFolder = (el) => {
     if (el.folder) return el.folder; // prefer explicit folder field if present
     const url = el.imageUrl || "";
     if (url.includes("/elements/livingRoom/")) return "livingRoom";
-    if (url.includes("/elements/library/")) return "library";
+    if (url.includes("/elements/Library/")) return "Library";
     return "unknown";
   };
   const filtered = elements.filter((el) => deriveFolder(el) === category);
@@ -227,9 +227,9 @@ export default function AdminMapEditorPage() {
                 Living Room
               </button>
               <button
-                onClick={() => setCategory("library")}
+                onClick={() => setCategory("Library")}
                 className={`px-3 py-2 rounded-md text-xs border transition ${
-                  category === "library"
+                  category === "Library"
                     ? "border-cyan-500 text-cyan-400 bg-cyan-500/10"
                     : "border-gray-700 text-gray-400 hover:border-gray-500"
                 }`}
