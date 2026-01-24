@@ -3,14 +3,6 @@ import { useEffect } from "react";
 import { useCreateWorldStore } from "@/stores/useWorldStore";
 import { toast } from "sonner";
 
-function gettokenFromCookie() {
-  if (typeof document === "undefined") return "";
-  const cookies = document.cookie.split(";").map(c => c.trim());
-  const tokenCookie = cookies.find(c => c.startsWith("token="));
-  if (!tokenCookie) return "";
-  return tokenCookie.split("=")[1];
-}
-
 export default function useWorldSocket(spaceID, token) {
   const addPlayer = useCreateWorldStore((s) => s.addPlayer);
   const removePlayer = useCreateWorldStore((s) => s.removePlayer);
@@ -22,19 +14,18 @@ export default function useWorldSocket(spaceID, token) {
 
     if (!spaceID || !token) return;
 
-    const socket = connectSocket(token);
+    const socket = connectSocket(); // ✅ DO NOT PASS TOKEN HERE
     window.__ws = socket;
 
-    socket.onopen = () => {
+    const handleOpen = () => {
+      console.log("✅ WS OPEN → sending JOIN");
       sendJoinRequest(spaceID, token);
     };
 
-    socket.onmessage = (event) => {
+    const handleMessage = (event) => {
       console.log("📩 WS MESSAGE RAW:", event.data);
       const message = JSON.parse(event.data);
       console.log("📩 WS MESSAGE PARSED:", message);
-
-     
 
       switch (message.type) {
         case "space-joined": {
@@ -75,6 +66,13 @@ export default function useWorldSocket(spaceID, token) {
       }
     };
 
-    return () => socket.close();
-  }, [spaceID, token]); // ✅ TOKEN IS REQUIRED HERE
+    socket.addEventListener("open", handleOpen);
+    socket.addEventListener("message", handleMessage);
+
+    return () => {
+      socket.removeEventListener("open", handleOpen);
+      socket.removeEventListener("message", handleMessage);
+      try { socket.close(); } catch {}
+    };
+  }, [spaceID, token]);
 }
