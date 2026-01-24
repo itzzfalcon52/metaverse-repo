@@ -140,10 +140,13 @@ this.load.once(Phaser.Loader.Events.COMPLETE, () => {
   for (const el of elements) {
     const key = `space-el:${el.id}`;
 
-    const x = el.x + offsetX;
-    const y = el.y + offsetY;
+    // Elements are already stored in MAP-LOCAL coordinates
+// The map itself is already offset, so DO NOT add offset again
+const x = el.x;
+const y = el.y;
 
-    this.add.image(x, y, key).setOrigin(0, 0).setDepth(5);
+this.add.image(x, y, key).setOrigin(0, 0).setDepth(5);
+console.log("ELEMENT", el.x, el.y, "MAP OFFSET", offsetX, offsetY);
   }
 });
 
