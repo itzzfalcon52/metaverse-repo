@@ -47,11 +47,11 @@ const STEP = 32;
     initHandlers() {
         // Listening for "message" events from the WebSocket connection
         this.ws.on("message", async (data) => {
-            console.log(data); // Logging the raw message data
+            //console.log(data); // Logging the raw message data
 
             // Parsing the incoming message as JSON
             const parsedData = JSON.parse(data.toString());
-            console.log(parsedData); // Logging the parsed data
+            //console.log(parsedData); // Logging the parsed data
 
             // Handling different message types based on the "type" field
             switch (parsedData.type) {
@@ -117,7 +117,7 @@ const STEP = 32;
                     // Assigning the space ID to this user instance
                     this.spaceId = spaceId;
 
-                    // ✅ Prevent duplicate joins by same authenticated user in the same space
+                    // Prevent duplicate joins by same authenticated user in the same space
                     {
                       const rm = RoomManager.getInstance();
                       if (rm.hasUserId(spaceId, this.userId)) {
@@ -187,7 +187,7 @@ const STEP = 32;
                           return;
                       }
 
-                      // Optional: cap the message length to prevent flooding (e.g., 500 chars)
+                      //  cap the message length to prevent flooding (e.g., 500 chars)
                       const capped = text.slice(0, 500);
 
                       // Broadcast the chat message to all other users in the same room (exclude sender)
@@ -199,6 +199,17 @@ const STEP = 32;
                               ts: Date.now()       // timestamp for client-side ordering
                           }
                       }, this, this.spaceId);
+
+                       //  ALSO send to self so sender sees their own message in chat logs
+                      //    Mirrors the movement case pattern where we send back to self.
+                      this.send({
+                        type: "chat",
+                        payload: {
+                          userId: this.userId,
+                          message: capped,
+                          ts: Date.now()
+                        }
+                      });
                     }
                     break;
 
