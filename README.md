@@ -40,6 +40,9 @@ Users can:
 
 Built fully from scratch with **modern full-stack + realtime architecture**.
 
+Admins can:
+-Create maps by adding elements to a base map
+
 ---
 
 ##  Features
