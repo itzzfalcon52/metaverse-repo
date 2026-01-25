@@ -12,7 +12,7 @@ export const useCreateWorldStore = create((set) => ({
 
   addPlayer(player) {
     set((state) => {
-      const newPlayers = new Map(state.players);
+      const newPlayers = new Map(state.players); //we do this to create a copy of the map and not iterate over orgignal
       newPlayers.set(player.id, player);
       return { players: newPlayers };
     });

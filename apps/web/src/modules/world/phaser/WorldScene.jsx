@@ -32,12 +32,15 @@ export class WorldScene extends Phaser.Scene {
 
     // Collision grid resolution (IntGrid) you chose
     this.collisionTileSize = 16;
+
+    this.selfSprite = null; // the sprite camera will follow
+
   }
 
   // Store external callbacks (no logic changes)
   init(data) {
-    this.world = data.world;                  // ✅ FULL WORLD FROM DB
-    this.mapData = data.world.tilemapJson;    // ✅ MAP JSON FROM DB
+    this.world = data.world;                  // FULL WORLD FROM DB
+    this.mapData = data.world.tilemapJson;    // MAP JSON FROM DB
     this.getPlayers = data.getPlayers;
     this.getSelfId = data.getSelfId;
   }
@@ -157,13 +160,12 @@ if (elements.length > 0) {
 
     // Camera bounds to map rect and zoom-to-fit with small padding
     this.cameras.main.setBounds(offsetX, offsetY, map.width, map.height);
-    const viewW = this.scale.width;
-    const viewH = this.scale.height;
-    const padding = 8;
-    const zoomX = (viewW - padding) / map.width;
-    const zoomY = (viewH - padding) / map.height;
-    this.cameras.main.setZoom(Math.min(zoomX, zoomY));
-    this.cameras.main.centerOn(offsetX + map.width / 2, offsetY + map.height / 2);
+    // Fixed zoom (increase = more zoom-in)
+    this.cameras.main.setZoom(1.2);
+
+    //  round pixels to avoid subpixel jitter
+    this.cameras.main.roundPixels = true;
+    
 
     console.log("✅ Map rendered", map.width, map.height);
 
@@ -217,22 +219,35 @@ if (elements.length > 0) {
       if (!this.playerSprites.has(p.id)) {
         const worldX = p.x + this.mapOffsetX;
         const worldY = p.y + this.mapOffsetY;
-
+      
         this.ensureAvatarLoaded(p.avatarKey);
         if (!this.textures.exists(`${p.avatarKey}:idle`)) continue;
-
+      
         const sprite = this.add.sprite(worldX, worldY, `${p.avatarKey}:idle`);
         sprite.setDepth(10);
         sprite.setOrigin(0.5, 0.5);
         sprite.setScale(0.3);
-
+      
         // logical movement target
         sprite.targetX = worldX;
         sprite.targetY = worldY;
-
+      
         this.playerSprites.set(p.id, sprite);
+      
         console.log("PLAYER", p.x, p.y, "WORLD", worldX, worldY);
+      
+        //  IF THIS IS ME → START CAMERA FOLLOW
+        if (p.id === selfId && !this.selfSprite) {
+          this.selfSprite = sprite;
+      
+          // Smooth follow
+          this.cameras.main.startFollow(sprite, true, 0.1, 0.1);
+      
+          // Deadzone to prevent micro jitter
+          this.cameras.main.setDeadzone(120, 90);
+        }
       }
+      
     }
 
     // Interpolate and animate
