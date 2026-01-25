@@ -21,8 +21,8 @@ export default function useWebRTC(spaceId,token){
             return;
         }
         if(msg.type==="proximity"){
-            const {withId,close}= msg.payload || {};
-            setNearUserId(close ?withId :(nearUserId === withId ? null : nearUserId));
+            const {withUserId,close}= msg.payload || {};
+            setNearUserId((prev) => (close ? withUserId : prev === withUserId ? null : prev));
 
         }
         if(msg.type==="rtc-offer"){
@@ -68,7 +68,7 @@ export default function useWebRTC(spaceId,token){
   async function ensureLocalMedia(){
     if(localStream) return;
     try{
-        const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:true});
         setLocalStream(stream);
     }catch(e){
         console.error("Failed to get local media",e);

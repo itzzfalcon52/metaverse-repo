@@ -323,8 +323,8 @@ const STEP = 32;
                             // You can perform operations with otherUser here if needed
                             if(otherUser.id===this.id) continue;
                             const close=RoomManager.getInstance().areClose(this.x, this.y, otherUser.x, otherUser.y,64);
-                            this.send({type:"proximity",payload:{withId:otherUser.id,close}});
-                            otherUser.send({type:"proximity",payload:{withId:this.id,close}});
+                            this.send({type:"proximity",payload:{withId:otherUser.id,withUserId: otherUser.userId,close}});
+                            otherUser.send({type:"proximity",payload:{withId:this.id, withUserId: this.userId,close}});
                         }
 
                           
