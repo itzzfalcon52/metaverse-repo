@@ -37,6 +37,7 @@ Users can:
 - Chat with people in the same space
 - Use avatars
 - Experience true multiplayer via WebSockets
+- Video A 1-1 nearby player via webRTC
 
 Built fully from scratch with **modern full-stack + realtime architecture**.
 
@@ -60,6 +61,8 @@ Admins can:
 - Users can:
   - Create spaces
   - Join spaces
+  - chat with other users
+  - video call with a nearby user
 - Each space has:
   - Width & height
   - Tile-based map
@@ -109,6 +112,15 @@ Admins can:
 
 ---
 
+### Video Calling Functionality
+
+- real time 1 on 1 video calling to a nearby player
+- once aplayer reaches a nearby player,they can connect via video call
+
+
+---
+
+
 ###  Game Engine (Phaser)
 
 - Map rendering using **Phaser 3**
@@ -145,14 +157,6 @@ Different themes
 Map selector UI
 
 Teleport between maps
-
-##  Video & Voice Chat
-
-WebRTC based voice chat
-
-Proximity-based audio
-
-Optional video rooms
 
 ##  Custom Avatars
 
