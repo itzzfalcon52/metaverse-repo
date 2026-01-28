@@ -11,7 +11,17 @@ import axios from "axios";
 import { useRequireAuth } from "@/hooks/use-protected-auth";
 // WebRTC hook: manages proximity detection (via WS), RTCPeerConnection lifecycle, and media streams
 import useWebRTC from "@/hooks/use-webrtc";
-import { Mic, MicOff, Video, VideoOff, MessageSquare, Link2, LogOut, Phone, PhoneOff } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  MessageSquare,
+  Link2,
+  LogOut,
+  Phone,
+  PhoneOff,
+} from "lucide-react";
 
 /**
  * SpaceView renders a specific space by dynamic spaceId.
@@ -248,27 +258,6 @@ export default function SpaceView() {
           {/* WebRTC: show Call/End buttons based on proximity and call state */}
           {/* When nearUserId is set (from WS "proximity"), allow initiating a call.
               Buttons are lightweight controls; detailed video UI is on the right panel. */}
-          {nearUserId && !callActive && (
-            <Button
-              className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200"
-              onClick={startCall}
-              title={`Start call with nearby user (${nearUserId})`}
-            >
-              <Phone size={16} className="mr-2" />
-              Call
-            </Button>
-          )}
-          {callActive && (
-            <Button
-              variant="outline"
-              className="border-red-600/50 text-red-300 bg-[#0f141b]/90 backdrop-blur-sm hover:bg-red-900/30 hover:border-red-500/70 transition-all duration-200 shadow-lg"
-              onClick={endCall}
-              title="End current call"
-            >
-              <PhoneOff size={16} className="mr-2" />
-              End Call
-            </Button>
-          )}
         </div>
 
         {/* Top-right space id overlay */}
@@ -314,14 +303,16 @@ export default function SpaceView() {
           <div className="px-5 py-4 border-b border-gray-700/50 bg-gradient-to-r from-[#0f141b] to-[#12171f]">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold tracking-tight">Video Call</h2>
-              <span className={cn(
-                "text-xs px-2.5 py-1 rounded-full font-medium",
-                callActive 
-                  ? "bg-green-500/20 text-green-300 border border-green-500/30" 
-                  : nearUserId 
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                  : "bg-gray-700/20 text-gray-400 border border-gray-700/30"
-              )}>
+              <span
+                className={cn(
+                  "text-xs px-2.5 py-1 rounded-full font-medium",
+                  callActive
+                    ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                    : nearUserId
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                    : "bg-gray-700/20 text-gray-400 border border-gray-700/30"
+                )}
+              >
                 {callActive ? "● Connected" : nearUserId ? "● Nearby user" : "No nearby user"}
               </span>
             </div>
@@ -351,15 +342,19 @@ export default function SpaceView() {
                   size="sm"
                   className={cn(
                     "flex-1 border-gray-700/60 backdrop-blur-sm transition-all duration-200 shadow-md",
-                    micEnabled 
-                      ? "bg-[#0f141b]/90 text-gray-200 hover:bg-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-300" 
+                    micEnabled
+                      ? "bg-[#0f141b]/90 text-gray-200 hover:bg-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-300"
                       : "bg-red-900/30 text-red-300 border-red-600/50 hover:bg-red-900/50"
                   )}
                   onClick={toggleMic}
                   title={micEnabled ? "Mute microphone" : "Unmute microphone"}
                   disabled={!callActive}
                 >
-                  {micEnabled ? <Mic size={16} className="mr-1.5" /> : <MicOff size={16} className="mr-1.5" />}
+                  {micEnabled ? (
+                    <Mic size={16} className="mr-1.5" />
+                  ) : (
+                    <MicOff size={16} className="mr-1.5" />
+                  )}
                   <span className="text-xs">{micEnabled ? "Mic On" : "Mic Off"}</span>
                 </Button>
                 <Button
@@ -367,15 +362,19 @@ export default function SpaceView() {
                   size="sm"
                   className={cn(
                     "flex-1 border-gray-700/60 backdrop-blur-sm transition-all duration-200 shadow-md",
-                    camEnabled 
-                      ? "bg-[#0f141b]/90 text-gray-200 hover:bg-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-300" 
+                    camEnabled
+                      ? "bg-[#0f141b]/90 text-gray-200 hover:bg-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-300"
                       : "bg-red-900/30 text-red-300 border-red-600/50 hover:bg-red-900/50"
                   )}
                   onClick={toggleCam}
                   title={camEnabled ? "Turn off camera" : "Turn on camera"}
                   disabled={!callActive}
                 >
-                  {camEnabled ? <Video size={16} className="mr-1.5" /> : <VideoOff size={16} className="mr-1.5" />}
+                  {camEnabled ? (
+                    <Video size={16} className="mr-1.5" />
+                  ) : (
+                    <VideoOff size={16} className="mr-1.5" />
+                  )}
                   <span className="text-xs">{camEnabled ? "Cam On" : "Cam Off"}</span>
                 </Button>
               </div>
@@ -398,19 +397,19 @@ export default function SpaceView() {
               )}
               {/* NEW: Remote controls placeholder (non-interactive, indicates peer status if later exposed) */}
               <div className="mt-3 flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  className="flex-1 border-gray-700/40 bg-[#0f141b]/60 text-gray-500 cursor-not-allowed opacity-60" 
+                  className="flex-1 border-gray-700/40 bg-[#0f141b]/60 text-gray-500 cursor-not-allowed opacity-60"
                   disabled
                 >
                   <Mic size={16} className="mr-1.5" />
                   <span className="text-xs">Peer Mic</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  className="flex-1 border-gray-700/40 bg-[#0f141b]/60 text-gray-500 cursor-not-allowed opacity-60" 
+                  className="flex-1 border-gray-700/40 bg-[#0f141b]/60 text-gray-500 cursor-not-allowed opacity-60"
                   disabled
                 >
                   <Video size={16} className="mr-1.5" />
@@ -419,7 +418,10 @@ export default function SpaceView() {
               </div>
             </div>
           </div>
+
           <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-[#0f141b] to-[#12171f] flex gap-3">
+            {/* Single initiation button: this is the ONLY "Call" button now.
+                It will request permissions (getUserMedia) inside startCall(). */}
             <Button
               className="flex-1 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={startCall}
@@ -427,8 +429,10 @@ export default function SpaceView() {
               title="Start a call with the nearby user"
             >
               <Phone size={16} className="mr-2" />
-              Start Call
+              Call
             </Button>
+
+            {/* End Call button lives only in sidebar as requested */}
             <Button
               variant="outline"
               className="flex-1 border-red-600/50 text-red-300 bg-[#0f141b]/90 hover:bg-red-900/30 hover:border-red-500/70 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
@@ -492,8 +496,8 @@ export default function SpaceView() {
                 if (e.key === "Enter") sendChat();
               }}
             />
-            <Button 
-              className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200" 
+            <Button
+              className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200"
               onClick={sendChat}
             >
               Send
