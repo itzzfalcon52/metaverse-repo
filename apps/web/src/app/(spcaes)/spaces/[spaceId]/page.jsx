@@ -64,6 +64,12 @@ export default function SpaceView() {
   // Loading state for world fetch
   const [loadingWorld, setLoadingWorld] = useState(true);
 
+  // NEW: handshake state
+  // - Top-left "Call" initializes an intent to call the nearby user.
+  // - Both users must press "Start Call" (sidebar) to actually start the WebRTC connection.
+  const [callInit, setCallInit] = useState(false);
+  const [callPeerUserId, setCallPeerUserId] = useState(null);
+
   // Fetch world data from HTTP backend
   useEffect(() => {
     if (!spaceId) return;
@@ -97,6 +103,27 @@ export default function SpaceView() {
     const onMessage = (evt) => {
       try {
         const msg = JSON.parse(evt.data);
+
+        // NEW: call-intent handshake messages
+        // - "call-init": other user clicked top-left Call. This user must also click Start Call in sidebar.
+        // - "call-cancel": other user canceled the init.
+        if (msg.type === "call-init") {
+          const { fromUserId } = msg.payload || {};
+          if (fromUserId) {
+            setCallInit(true);
+            setCallPeerUserId(fromUserId);
+            // Auto-open video panel so user sees Start Call
+            setVideoOpen(true);
+          }
+        }
+        if (msg.type === "call-cancel") {
+          const { fromUserId } = msg.payload || {};
+          if (fromUserId && fromUserId === callPeerUserId) {
+            setCallInit(false);
+            setCallPeerUserId(null);
+          }
+        }
+
         if (msg.type === "chat") {
           const { userId, message, ts, nonce } = msg.payload || {};
 
@@ -130,7 +157,7 @@ export default function SpaceView() {
 
     ws.addEventListener("message", onMessage);
     return () => ws.removeEventListener("message", onMessage);
-  }, [spaceId, token]);
+  }, [spaceId, token, callPeerUserId]);
 
   /**
    * Send chat
@@ -214,6 +241,56 @@ export default function SpaceView() {
     toggleCam,
   } = useWebRTC(spaceId, token);
 
+  // NEW: clear call init state if peer goes away or call ends
+  useEffect(() => {
+    if (!nearUserId) {
+      setCallInit(false);
+      setCallPeerUserId(null);
+      return;
+    }
+    if (callPeerUserId && nearUserId !== callPeerUserId) {
+      setCallInit(false);
+      setCallPeerUserId(null);
+    }
+  }, [nearUserId, callPeerUserId]);
+
+  useEffect(() => {
+    if (!callActive) return;
+    // Once connected, clear init so UI doesn't keep showing "Start Call" gating.
+    setCallInit(false);
+    setCallPeerUserId(null);
+  }, [callActive]);
+
+  // NEW: Top-left "Call" (init) handler
+  const initCall = () => {
+    const ws = typeof window !== "undefined" ? window.__ws : null;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!nearUserId) return;
+
+    setCallInit(true);
+    setCallPeerUserId(nearUserId);
+    setVideoOpen(true);
+
+    // Notify the peer that we want to call; this does NOT start WebRTC.
+    ws.send(JSON.stringify({ type: "call-init", payload: { toUserId: nearUserId } }));
+  };
+
+  // NEW: allow canceling the init (optional UX)
+  const cancelInitCall = () => {
+    const ws = typeof window !== "undefined" ? window.__ws : null;
+    if (ws && ws.readyState === WebSocket.OPEN && callPeerUserId) {
+      ws.send(JSON.stringify({ type: "call-cancel", payload: { toUserId: callPeerUserId } }));
+    }
+    setCallInit(false);
+    setCallPeerUserId(null);
+  };
+
+  // NEW: Sidebar Start Call gating:
+  // Only allow starting WebRTC if:
+  // - callInit is true, and
+  // - the peer we initialized with is still the nearby user
+  const canStartSidebarCall = !!nearUserId && !!callInit && nearUserId === callPeerUserId && !callActive;
+
   // Render full-page layout with world canvas and a sliding chat pane
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-[#0a0e13] via-[#0b0f14] to-[#0d1117] text-white overflow-hidden">
@@ -240,6 +317,31 @@ export default function SpaceView() {
             <Video size={16} className="mr-2" />
             {videoOpen ? "Hide Video" : "Show Video"}
           </Button>
+
+          {/* NEW: Top-left Call init button (only shows when user is nearby and not in a call) */}
+          {nearUserId && !callActive && !callInit && (
+            <Button
+              className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200"
+              onClick={initCall}
+              title="Initialize a call with the nearby user (both must press Start Call)"
+            >
+              <Phone size={16} className="mr-2" />
+              Call
+            </Button>
+          )}
+
+          {/* NEW: Optional cancel init button if already initialized */}
+          {callInit && !callActive && (
+            <Button
+              variant="outline"
+              className="border-red-600/50 text-red-300 bg-[#0f141b]/90 hover:bg-red-900/30 hover:border-red-500/70 transition-all duration-200 shadow-lg"
+              onClick={cancelInitCall}
+              title="Cancel call initialization"
+            >
+              <PhoneOff size={16} className="mr-2" />
+              Cancel Call
+            </Button>
+          )}
 
           {/* Share current space URL */}
           <ShareButton spaceId={spaceId} />
@@ -309,14 +411,23 @@ export default function SpaceView() {
                   callActive
                     ? "bg-green-500/20 text-green-300 border border-green-500/30"
                     : nearUserId
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                    ? callInit
+                      ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                      : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                     : "bg-gray-700/20 text-gray-400 border border-gray-700/30"
                 )}
               >
-                {callActive ? "● Connected" : nearUserId ? "● Nearby user" : "No nearby user"}
+                {callActive
+                  ? "● Connected"
+                  : nearUserId
+                  ? callInit
+                    ? "● Ready (press Start Call)"
+                    : "● Nearby user"
+                  : "No nearby user"}
               </span>
             </div>
           </div>
+
           <div className="flex-1 p-4 grid grid-cols-1 gap-4">
             {/* Local video: muted to avoid audio feedback; bound dynamically to localStream */}
             <div className="relative group">
@@ -350,11 +461,7 @@ export default function SpaceView() {
                   title={micEnabled ? "Mute microphone" : "Unmute microphone"}
                   disabled={!callActive}
                 >
-                  {micEnabled ? (
-                    <Mic size={16} className="mr-1.5" />
-                  ) : (
-                    <MicOff size={16} className="mr-1.5" />
-                  )}
+                  {micEnabled ? <Mic size={16} className="mr-1.5" /> : <MicOff size={16} className="mr-1.5" />}
                   <span className="text-xs">{micEnabled ? "Mic On" : "Mic Off"}</span>
                 </Button>
                 <Button
@@ -370,11 +477,7 @@ export default function SpaceView() {
                   title={camEnabled ? "Turn off camera" : "Turn on camera"}
                   disabled={!callActive}
                 >
-                  {camEnabled ? (
-                    <Video size={16} className="mr-1.5" />
-                  ) : (
-                    <VideoOff size={16} className="mr-1.5" />
-                  )}
+                  {camEnabled ? <Video size={16} className="mr-1.5" /> : <VideoOff size={16} className="mr-1.5" />}
                   <span className="text-xs">{camEnabled ? "Cam On" : "Cam Off"}</span>
                 </Button>
               </div>
@@ -420,16 +523,23 @@ export default function SpaceView() {
           </div>
 
           <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-[#0f141b] to-[#12171f] flex gap-3">
-            {/* Single initiation button: this is the ONLY "Call" button now.
-                It will request permissions (getUserMedia) inside startCall(). */}
+            {/* Sidebar Start Call must be clicked by BOTH users:
+                - It's enabled only after top-left Call was initialized (either by you or peer via WS "call-init").
+                - It starts the actual WebRTC offer/answer exchange via startCall(). */}
             <Button
               className="flex-1 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={startCall}
-              disabled={!nearUserId || callActive}
-              title="Start a call with the nearby user"
+              disabled={!canStartSidebarCall}
+              title={
+                canStartSidebarCall
+                  ? "Start the call (both users must press Start Call)"
+                  : nearUserId
+                  ? "Click Call (top-left) to initialize, then both users press Start Call"
+                  : "No nearby user"
+              }
             >
               <Phone size={16} className="mr-2" />
-              Call
+              Start Call
             </Button>
 
             {/* End Call button lives only in sidebar as requested */}

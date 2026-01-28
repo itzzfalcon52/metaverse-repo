@@ -401,6 +401,7 @@ const STEP = 32;
     // Method to handle user disconnection
     destroy() {
         if (!this.spaceId) return;
+        this.avatarKey=null;
       
         RoomManager.getInstance().broadcast({
           type: "user-left",
