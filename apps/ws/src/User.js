@@ -346,17 +346,57 @@ const STEP = 32;
 
                 }   
 
-                // ...existing code...
 
-                case "rtc-ice":{
-                    const {toUserId,candidate}=parsedData.payload || {};
-                    const room= RoomManager.getInstance().rooms.get(this.spaceId) || [];
-                    const targetUser=room.find(u=>u.userId===toUserId);
-                    if(targetUser){
+                case "rtc-offer": {
+                    if (!this.spaceId) return;
+
+                    const { toUserId, sdp } = parsedData.payload || {};
+                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
+                    const targetUser = room.find((u) => u.userId === toUserId);
+
+                    if (targetUser) {
                         targetUser.send({
-                            type:"rtc-ice",
-                            payload:{
-                                fromUserId:this.userId,
+                            type: "rtc-offer",
+                            payload: {
+                                fromUserId: this.userId,
+                                sdp
+                            }
+                        });
+                    }
+                    break;
+                }
+
+                case "rtc-answer": {
+                    if (!this.spaceId) return;
+
+                    const { toUserId, sdp } = parsedData.payload || {};
+                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
+                    const targetUser = room.find((u) => u.userId === toUserId);
+
+                    if (targetUser) {
+                        targetUser.send({
+                            type: "rtc-answer",
+                            payload: {
+                                fromUserId: this.userId,
+                                sdp
+                            }
+                        });
+                    }
+                    break;
+                }
+
+                case "rtc-ice": {
+                    if (!this.spaceId) return;
+
+                    const { toUserId, candidate } = parsedData.payload || {};
+                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
+                    const targetUser = room.find((u) => u.userId === toUserId);
+
+                    if (targetUser) {
+                        targetUser.send({
+                            type: "rtc-ice",
+                            payload: {
+                                fromUserId: this.userId,
                                 candidate
                             }
                         });
@@ -364,54 +404,7 @@ const STEP = 32;
                     break;
                 }
 
-                // NEW: invite/accept/decline signaling for "ring first, connect on accept"
-                case "rtc-invite": {
-                    if (!this.spaceId) return;
-
-                    const { toUserId } = parsedData.payload || {};
-                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
-                    const targetUser = room.find((u) => u.userId === toUserId);
-
-                    if (targetUser) {
-                        targetUser.send({
-                            type: "rtc-invite",
-                            payload: { fromUserId: this.userId }
-                        });
-                    }
-                    break;
-                }
-
-                case "rtc-invite-accept": {
-                    if (!this.spaceId) return;
-
-                    const { toUserId } = parsedData.payload || {};
-                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
-                    const targetUser = room.find((u) => u.userId === toUserId);
-
-                    if (targetUser) {
-                        targetUser.send({
-                            type: "rtc-invite-accept",
-                            payload: { fromUserId: this.userId }
-                        });
-                    }
-                    break;
-                }
-
-                case "rtc-invite-decline": {
-                    if (!this.spaceId) return;
-
-                    const { toUserId, reason } = parsedData.payload || {};
-                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
-                    const targetUser = room.find((u) => u.userId === toUserId);
-
-                    if (targetUser) {
-                        targetUser.send({
-                            type: "rtc-invite-decline",
-                            payload: { fromUserId: this.userId, reason: reason || "declined" }
-                        });
-                    }
-                    break;
-                }
+               
             }
         });
     }
@@ -419,7 +412,6 @@ const STEP = 32;
     // Method to handle user disconnection
     destroy() {
         if (!this.spaceId) return;
-        this.avatarKey=null;
       
         RoomManager.getInstance().broadcast({
           type: "user-left",
