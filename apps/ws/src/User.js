@@ -1,4 +1,3 @@
-
 // Importing WebSocket library for handling WebSocket connections
 import WebSocket from "ws";
 // Importing RoomManager to manage users and rooms
@@ -347,37 +346,7 @@ const STEP = 32;
 
                 }   
 
-                case "rtc-offer":{
-                    const {toUserId,sdp}=parsedData.payload || {};
-                    const room= RoomManager.getInstance().rooms.get(this.spaceId) || [];
-                    const targetUser=room.find(u=>u.userId===toUserId);
-                    if(targetUser){
-                        targetUser.send({
-                            type:"rtc-offer",
-                            payload:{
-                                fromUserId:this.userId,
-                                sdp
-                            }
-                        });
-                    }
-                    break;
-                }
-
-                case "rtc-answer":{
-                    const {toUserId,sdp}=parsedData.payload || {};
-                    const room= RoomManager.getInstance().rooms.get(this.spaceId) || [];
-                    const targetUser=room.find(u=>u.userId===toUserId);
-                    if(targetUser){
-                        targetUser.send({
-                            type:"rtc-answer",
-                            payload:{
-                                fromUserId:this.userId,
-                                sdp
-                            }
-                        });
-                    }
-                    break;
-                }
+                // ...existing code...
 
                 case "rtc-ice":{
                     const {toUserId,candidate}=parsedData.payload || {};
@@ -390,6 +359,55 @@ const STEP = 32;
                                 fromUserId:this.userId,
                                 candidate
                             }
+                        });
+                    }
+                    break;
+                }
+
+                // NEW: invite/accept/decline signaling for "ring first, connect on accept"
+                case "rtc-invite": {
+                    if (!this.spaceId) return;
+
+                    const { toUserId } = parsedData.payload || {};
+                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
+                    const targetUser = room.find((u) => u.userId === toUserId);
+
+                    if (targetUser) {
+                        targetUser.send({
+                            type: "rtc-invite",
+                            payload: { fromUserId: this.userId }
+                        });
+                    }
+                    break;
+                }
+
+                case "rtc-invite-accept": {
+                    if (!this.spaceId) return;
+
+                    const { toUserId } = parsedData.payload || {};
+                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
+                    const targetUser = room.find((u) => u.userId === toUserId);
+
+                    if (targetUser) {
+                        targetUser.send({
+                            type: "rtc-invite-accept",
+                            payload: { fromUserId: this.userId }
+                        });
+                    }
+                    break;
+                }
+
+                case "rtc-invite-decline": {
+                    if (!this.spaceId) return;
+
+                    const { toUserId, reason } = parsedData.payload || {};
+                    const room = RoomManager.getInstance().rooms.get(this.spaceId) || [];
+                    const targetUser = room.find((u) => u.userId === toUserId);
+
+                    if (targetUser) {
+                        targetUser.send({
+                            type: "rtc-invite-decline",
+                            payload: { fromUserId: this.userId, reason: reason || "declined" }
                         });
                     }
                     break;
@@ -423,35 +441,3 @@ const STEP = 32;
 // Exporting the User class for use in other modules
 export default User;
 // ...existing comments...
-
-// Generalized Steps for Future Reference:
-// 1. **User Initialization**:
-//    - Assign a unique identifier to each user (e.g., `id`).
-//    - Store the WebSocket connection for communication.
-//    - Initialize event handlers for WebSocket messages.
-
-// 2. **Message Handling**:
-//    - Parse incoming messages as JSON.
-//    - Use a `switch` or similar structure to handle different message types (e.g., `join`, `move`).
-//    - Validate incoming data (e.g., verify tokens, check room existence).
-
-// 3. **Room Management**:
-//    - Use a room manager (e.g., `RoomManager`) to handle adding/removing users from rooms.
-//    - Assign users to rooms based on their requests (e.g., `spaceId`).
-//    - Broadcast messages to other users in the same room as needed.
-
-// 4. **User Actions**:
-//    - Implement specific actions for users (e.g., joining a room, moving within a room).
-//    - Validate actions (e.g., ensure movement is within allowed bounds).
-
-// 5. **Disconnection Handling**:
-//    - Handle user disconnection gracefully (e.g., remove them from rooms).
-//    - Notify other users in the room about the disconnection.
-
-// 6. **Communication**:
-//    - Use a `send` method to send messages to the user via WebSocket.
-//    - Ensure all messages are properly formatted as JSON.
-
-// 7. **Error Handling**:
-//    - Close the WebSocket connection if invalid data is received (e.g., invalid token).
-//    - Log errors or unexpected behavior for debugging.

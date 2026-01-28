@@ -212,6 +212,11 @@ export default function SpaceView() {
     camEnabled,
     toggleMic,
     toggleCam,
+    // NEW: accept/decline UI
+    incomingCall,
+    callPhase,
+    acceptCall,
+    declineCall,
   } = useWebRTC(spaceId, token);
 
   // Render full-page layout with world canvas and a sliding chat pane
@@ -308,15 +313,24 @@ export default function SpaceView() {
                   "text-xs px-2.5 py-1 rounded-full font-medium",
                   callActive
                     ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                    : incomingCall
+                    ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
                     : nearUserId
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                     : "bg-gray-700/20 text-gray-400 border border-gray-700/30"
                 )}
               >
-                {callActive ? "● Connected" : nearUserId ? "● Nearby user" : "No nearby user"}
+                {callActive
+                  ? "● Connected"
+                  : incomingCall
+                  ? "● Incoming call"
+                  : nearUserId
+                  ? "● Nearby user"
+                  : "No nearby user"}
               </span>
             </div>
           </div>
+
           <div className="flex-1 p-4 grid grid-cols-1 gap-4">
             {/* Local video: muted to avoid audio feedback; bound dynamically to localStream */}
             <div className="relative group">
@@ -350,11 +364,7 @@ export default function SpaceView() {
                   title={micEnabled ? "Mute microphone" : "Unmute microphone"}
                   disabled={!callActive}
                 >
-                  {micEnabled ? (
-                    <Mic size={16} className="mr-1.5" />
-                  ) : (
-                    <MicOff size={16} className="mr-1.5" />
-                  )}
+                  {micEnabled ? <Mic size={16} className="mr-1.5" /> : <MicOff size={16} className="mr-1.5" />}
                   <span className="text-xs">{micEnabled ? "Mic On" : "Mic Off"}</span>
                 </Button>
                 <Button
@@ -370,11 +380,7 @@ export default function SpaceView() {
                   title={camEnabled ? "Turn off camera" : "Turn on camera"}
                   disabled={!callActive}
                 >
-                  {camEnabled ? (
-                    <Video size={16} className="mr-1.5" />
-                  ) : (
-                    <VideoOff size={16} className="mr-1.5" />
-                  )}
+                  {camEnabled ? <Video size={16} className="mr-1.5" /> : <VideoOff size={16} className="mr-1.5" />}
                   <span className="text-xs">{camEnabled ? "Cam On" : "Cam Off"}</span>
                 </Button>
               </div>
@@ -420,29 +426,54 @@ export default function SpaceView() {
           </div>
 
           <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-[#0f141b] to-[#12171f] flex gap-3">
-            {/* Single initiation button: this is the ONLY "Call" button now.
-                It will request permissions (getUserMedia) inside startCall(). */}
-            <Button
-              className="flex-1 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={startCall}
-              disabled={!nearUserId || callActive}
-              title="Start a call with the nearby user"
-            >
-              <Phone size={16} className="mr-2" />
-              Call
-            </Button>
+            {/* Incoming call controls (NEW): accept/decline lives in sidebar */}
+            {incomingCall ? (
+              <>
+                <Button
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-black font-semibold shadow-lg shadow-green-500/20 transition-all duration-200"
+                  onClick={acceptCall}
+                  title="Accept incoming call"
+                >
+                  <Phone size={16} className="mr-2" />
+                  Accept
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 border-red-600/50 text-red-300 bg-[#0f141b]/90 hover:bg-red-900/30 hover:border-red-500/70 transition-all duration-200 shadow-md"
+                  onClick={declineCall}
+                  title="Decline incoming call"
+                >
+                  <PhoneOff size={16} className="mr-2" />
+                  Decline
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Single initiation button: this is the ONLY "Call" button now.
+                    It will request permissions (getUserMedia) inside startCall(). */}
+                <Button
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-black font-semibold shadow-lg shadow-cyan-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={startCall}
+                  disabled={!nearUserId || callActive || callPhase === "ringing" || callPhase === "connecting"}
+                  title="Start a call with the nearby user"
+                >
+                  <Phone size={16} className="mr-2" />
+                  {callPhase === "ringing" ? "Calling..." : callPhase === "connecting" ? "Connecting..." : "Call"}
+                </Button>
 
-            {/* End Call button lives only in sidebar as requested */}
-            <Button
-              variant="outline"
-              className="flex-1 border-red-600/50 text-red-300 bg-[#0f141b]/90 hover:bg-red-900/30 hover:border-red-500/70 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-              onClick={endCall}
-              disabled={!callActive}
-              title="End the current call"
-            >
-              <PhoneOff size={16} className="mr-2" />
-              End
-            </Button>
+                {/* End Call button lives only in sidebar as requested */}
+                <Button
+                  variant="outline"
+                  className="flex-1 border-red-600/50 text-red-300 bg-[#0f141b]/90 hover:bg-red-900/30 hover:border-red-500/70 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  onClick={endCall}
+                  disabled={!callActive && callPhase !== "ringing" && callPhase !== "connecting"}
+                  title="End the current call"
+                >
+                  <PhoneOff size={16} className="mr-2" />
+                  End
+                </Button>
+              </>
+            )}
           </div>
         </aside>
       </main>
@@ -464,9 +495,7 @@ export default function SpaceView() {
           {/* Messages list */}
           <div className="flex-1 px-4 py-4 space-y-3 overflow-y-auto custom-scrollbar">
             {chatLog.length === 0 && (
-              <div className="text-xs text-gray-500 text-center py-8">
-                No messages yet. Start the conversation.
-              </div>
+              <div className="text-xs text-gray-500 text-center py-8">No messages yet. Start the conversation.</div>
             )}
             {chatLog.map((c, i) => (
               <div
@@ -532,8 +561,7 @@ export default function SpaceView() {
  */
 function ShareButton({ spaceId }) {
   const [copied, setCopied] = useState(false);
-  const inviteUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/spaces/${spaceId}` : "";
+  const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/spaces/${spaceId}` : "";
 
   const copyInvite = async () => {
     if (!inviteUrl) return;
